@@ -11,6 +11,9 @@ Julkinen sivu on yhä yksi index.html. Aito yhteinen tallennus tarvitsee sen rin
 - Poisto peruu julkaisuluvan ja poistaa rivin tietokannasta. Palveluntarjoajan varmuuskopioilla on erillinen vanhenemisaika.
 - Julkinen kokoelma on haettava ja sivutettu. Ihmisten kokemuksia ei esitetä varmennettuina tosiasioina.
 
+## Tuotannossa 30.10.2026
+P2 on julkaistu aimes.fi:n olemassa olevaan Pages-projektiin GitHubin main-haarasta. DB-sidonta, ylläpidon salaisuudet ja hyväksytty yhteysosoite on asetettu Cloudflaren tuotantoympäristöön. Tuotannossa kokeiltiin vastaanotto, tarkistus, julkaisu, kirjoittajan korjaus ja poisto; testikertomus poistettiin. Alla olevat käyttöönottoaskeleet ovat palautusta tai toiseen ympäristöön siirtämistä varten.
+
 ## Käyttöönotto olemassa olevaan Pages-projektiin
 Älä luo toista sivustoa tai muuta domainin DNS:ää. Varmista ensin, että aimes.fi on tämän repon Cloudflare Pages -projekti. Jos julkaisu on Workers Static Assets, sama API-ydin pitää liittää sen Worker-reititykseen; älä oleta Pagesia.
 
@@ -42,6 +45,6 @@ Roskapostin ensimmäinen raja: neljä lähetysyritystä/IP/tunti, piilotettu hou
 Julkaisemattomat lähetykset vanhenevat 90 päivässä; siivous tehdään seuraavan API-pyynnön yhteydessä. Vanhentuneet roskapostirajoitusrivit siivotaan samalla. Julkaistut tekstit säilyvät poistoon asti. Verkkopalvelun tarjoajalla voi olla yhteyslokeja ja varmuuskopioita: täydellistä teknistä anonymiteettiä ei luvata. Ennen avaamista varmista ylläpitäjän yhteystiedot ja palveluntarjoajan tietojenkäsittelyehdot.
 
 ## Julkaisun tila
-P2 on toteutettu ja testattu paikallisesti. Cloudflare-kytkennän ja tuotantokokeen valmistuminen pitää tarkistaa erikseen; tämä tiedosto ei ole todiste julkaisemisesta.
+Cloudflare vahvisti julkaisun onnistuneeksi ja tuotannon API-toimintakoe läpäistiin 30.10.2026. Samsungin käyttöliittymää ei ole tässä istunnossa voitu tarkistaa selaimessa.
 
 Myöhemmin voi lisätä vapaaehtoisen tukimaksun tai erillisen maksullisen lisäpalvelun. Nyt ei ole maksukoodia, maksuseinää tai tilauksia. Käyttäjien kertomuksia ei ole tarkoitettu myytäväksi.
