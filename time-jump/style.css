@@ -214,3 +214,69 @@ html { scrollbar-gutter: stable; }
   .explore-header-actions #explore-close { width:100%; }
 }
 @media(prefers-reduced-motion:reduce) { .gallery-card { transition:none; } }
+
+/* Illustrated entry points on the AIMES homepage. */
+.time-jump-cards {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(12px,1.75vw,26px);
+  max-width:1490px;
+  margin-inline:auto;
+  padding:clamp(18px,3vw,44px) clamp(14px,4vw,60px) 18px;
+}
+main:has(#search-panel[hidden]) .time-jump-cards { display:none; }
+.time-jump-card {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--panel);
+}
+.time-jump-card figure { position:relative; margin:0; }
+.time-jump-card img {
+  display:block;
+  width:100%;
+  aspect-ratio:16/10;
+  object-fit:cover;
+  border-radius:9px 9px 0 0;
+}
+.time-jump-card figcaption {
+  position:absolute;
+  bottom:10px;
+  left:10px;
+  padding:4px 8px;
+  border-radius:4px;
+  color:#fff;
+  background:#102326;
+  font-size:.75rem;
+}
+.time-jump-card-copy {
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:10px;
+  padding:clamp(14px,2vw,26px);
+}
+.time-jump-card h2 { margin:0; font-size:clamp(1.6rem,2.7vw,2.65rem); line-height:1.05; }
+.time-jump-card p,.time-jump-card small { color:var(--muted); }
+.time-jump-card-action {
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  min-height:44px;
+  margin-top:auto;
+  padding:6px 0;
+  border:0;
+  background:none;
+  color:var(--mint);
+  font-weight:700;
+  text-align:left;
+  text-decoration:underline;
+  text-underline-offset:.2em;
+}
+.time-jump-cards-credit { grid-column:1/-1; color:var(--muted); font-size:.76rem; }
+@media (max-width:650px) {
+  .time-jump-cards { grid-template-columns:minmax(0,1fr); }
+}
