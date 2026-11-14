@@ -153,3 +153,11 @@ html { scrollbar-gutter: stable; }
 .reconstruction-panel figcaption { margin:9px 0; font-size:.85rem; color:var(--muted); }
 .reconstruction-panel figcaption strong { display:block; color:var(--mint); }
 .reconstruction-panel > .fine { margin:9px 0 12px; }
+
+
+/* Opt-in historical discovery filters; all types included by default. */
+.source-filters { display:grid; gap:8px; padding:12px; margin:9px 0 16px; border:1px solid var(--line); background:#0b2225; }
+.source-filters label { font-size:.82rem; font-weight:600; color:var(--mint); }
+.source-filters select { color:var(--ink); background:#153438; border:1px solid #557f7c; padding:10px; min-width:0; width:100%; font:inherit; }
+.source-filters .fine { margin-top:5px; }
+.station .fine { display:block; }
