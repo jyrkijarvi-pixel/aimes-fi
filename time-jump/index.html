@@ -34,6 +34,27 @@
       <p class="eyebrow">AIMES / AIKAMATKAT</p>
       <h1>Maailma<br> on avoinna.</h1>
       <p class="intro">Valitse piste kartalta tai etsi paikka nimellä. Mihin haluaisit matkustaa?</p>
+      <section class="home-modes" aria-label="Kolme tapaa tutkia historiaa">
+        <p class="home-modes-heading">Valitse oma aikamatkasi</p>
+        <div class="home-modes-grid">
+          <button type="button" class="home-mode" id="mode-sources" aria-pressed="false">
+            <span class="home-mode-number">01 · LÄHTEET</span>
+            <strong>Oikea historia</strong>
+            <small>Kuvat, kartat ja Wikipedia</small>
+          </button>
+          <button type="button" class="home-mode" id="mode-gallery" aria-pressed="true">
+            <span class="home-mode-number">02 · KUVAPOLKU</span>
+            <strong>Kulje kuvissa</strong>
+            <small>Galleria ja kuvalöydöt</small>
+          </button>
+          <a class="home-mode home-mode-link" href="helsinki-1952/" aria-label="Avaa Helsinki 1952 -rekonstruktion 3D-kokeilu">
+            <span class="home-mode-number">03 · 3D-KOKEILU</span>
+            <strong>Astu menneeseen</strong>
+            <small>Helsinki 1952, kuviteltu koealue</small>
+          </a>
+        </div>
+        <p class="home-modes-status" id="mode-summary" role="status">Kuvapolku valittu: etsi paikka ja vuosi, niin galleria aukeaa.</p>
+      </section>
       <form id="search">
         <label for="query">Paikka tai koordinaatit</label>
         <div class="search-row"><input id="query" required maxlength="140" placeholder="Esim. Tokio tai 35.68, 139.76" autocomplete="off"><button class="primary" type="submit">Hae</button></div>
@@ -45,7 +66,6 @@
       </form>
       <p id="search-status" class="status" role="status"></p>
       <ul id="results" class="results"></ul>
-      <button class="featured" id="helsinki" type="button"><span>AIKAMATKADEMO</span><strong>Helsinki, kesä 1952</strong><b aria-hidden="true">↗</b></button>
       <p class="fine">Maat, kaupungit, kylät ja verkon kautta myös osoitteet. Kartan voi avata myös ilman yhteyttä.</p>
     </section>
     <section id="destination" class="destination" aria-labelledby="place-title" hidden>
