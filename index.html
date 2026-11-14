@@ -71,6 +71,20 @@
         </div>
         <button class="primary explore-cta" id="enter-explorer" type="button">Astu tutkimaan tätä paikkaa →</button>
         <a class="primary demo-link" id="demo" href="helsinki-1952/" hidden>Astu Helsinkiin 1952 ↗</a>
+        <div id="reconstruction-option" class="reconstruction-option" hidden>
+          <button class="outline reconstruction-toggle" id="reconstruction-toggle" type="button"
+                  aria-expanded="false" aria-controls="reconstruction-panel">✨ Näytä AI-rekonstruktio</button>
+          <p class="fine">Valmis Helsinki 1952 -kuvitus avautuu vain pyynnöstä. Tämä ei käynnistä kuvien generointia.</p>
+          <section id="reconstruction-panel" class="reconstruction-panel" aria-label="Helsinki 1952 -rekonstruktio" hidden>
+            <figure>
+              <img id="reconstruction-image" alt="Tekoälyllä kuviteltu näkymä Helsingin Kauppatorin ympäristöstä kesällä 1952. Ei historiallinen valokuva." loading="lazy" decoding="async">
+              <figcaption><strong>AI-rekonstruktio · Helsinki 1952</strong> Kuvitteellinen, etukäteen tuotettu näkymä. Rakennukset, ihmiset ja yksityiskohdat ovat tulkintaa, eivät varmennettua historiaa.</figcaption>
+            </figure>
+            <p class="fine">Oikeat arkistokuvat näkyvät edelleen yllä omana aineistonaan. Rekonstruktio ei ole niiden korvike.</p>
+            <a href="helsinki-1952/" class="outline">Tutki Helsinki 1952 -koeympäristöä ↗</a>
+            <p id="reconstruction-error" class="status" role="status"></p>
+          </section>
+        </div>
       </section>
       <section id="context" class="context" aria-label="Paikkatietoa ja lähikohteita"></section>
       <p class="fine map-links"><a id="street" href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">Avaa nykyinen katukartta OpenStreetMapissa ↗</a></p>
