@@ -311,6 +311,7 @@ async function travel(point, year = null, move = true) {
   byId('source-category').value = 'all';
   byId('source-time').value = 'all';
   byId('source-filter-status').textContent = '';
+  byId('gallery-count').textContent = 'Etsitään aineistoa…';
   nearbyPlaces = [];
   showDemo = false;
   clearPhoto();
@@ -332,6 +333,7 @@ async function travel(point, year = null, move = true) {
     byId('reconstruction-option').hidden = !data.demo;
     allMedia = data.photos || [];
     media = allMedia;
+    byId('gallery-count').textContent = allMedia.length + ' löytöä';
     photoIndex = 0;
     nearbyPlaces = data.wiki?.nearby || [];
     showDemo = !!data.demo;
@@ -339,13 +341,17 @@ async function travel(point, year = null, move = true) {
       byId('media-note').textContent = year === null ? 'Kuvia ja dokumentteja lähialueelta sekä paikannimen perusteella. Päiväykset vaihtelevat.' : 'Eri vuosien aineistot ovat mukana. Valitse aihe ja ajanjakso Tutki-näkymässä. Tarkista kuvausvuosi ja sijaintitiedon varmuus lähteestä.';
       renderPhoto();
     } else {
+      byId('gallery-count').textContent = !data.availability.photos ? 'Haku ei vastannut' : '0 löytöä';
       byId('media-note').textContent = !data.availability.photos
         ? 'Kuvahaku ei vastannut. Voit jatkaa kartalla tai yrittää uudelleen.'
         : 'Wikimedia Commonsista ei löytynyt tähän hakuun sopivaa, sallittua aineistoa. Kaikkien museoiden aineistot eivät kuulu tähän hakuun.';
     }
     renderContext(data.wiki, data.availability.wiki);
   } catch (error) {
-    if (!request.signal.aborted) byId('travel-status').textContent = `Aineiston lataus epäonnistui. ${error.message}`;
+    if (!request.signal.aborted) {
+      byId('gallery-count').textContent = 'Haku epäonnistui';
+      byId('travel-status').textContent = `Aineiston lataus epäonnistui. ${error.message}`;
+    }
   }
 }
 
@@ -386,6 +392,7 @@ byId('search').addEventListener('submit', async event => {
   const request = new AbortController();
   searchRequest = request;
   const q = byId('query').value.trim();
+  byId('search-year').setCustomValidity('');
   const coordinate = q.match(/^([+-]?\d+(?:\.\d+)?)\s*[,;]\s*([+-]?\d+(?:\.\d+)?)$/);
   byId('results').replaceChildren();
   if (coordinate) {
@@ -395,7 +402,12 @@ byId('search').addEventListener('submit', async event => {
       return;
     }
     byId('search-status').textContent = '';
-    travel(pointAt(L.latLng(+a,+b)));
+    const yr = byId('search-year').value.trim();
+    if (yr && (!Number.isInteger(Number(yr)) || Number(yr) === 0 || Math.abs(Number(yr)) > 100000)) {
+      byId('search-year').setCustomValidity('Anna kelvollinen vuosiluku.'); byId('search-year').reportValidity(); return;
+    }
+    await travel(pointAt(L.latLng(+a,+b)), yr ? Number(yr) : null);
+    openExplorer();
     return;
   }
   if (q.length < 2) { byId('search-status').textContent = 'Kirjoita vähintään kaksi merkkiä.'; return; }
@@ -403,10 +415,29 @@ byId('search').addEventListener('submit', async event => {
   try {
     const data = await api('search', { q }, request.signal);
     if (request.signal.aborted) return;
+    const selectedYear = byId('search-year').value.trim();
     for (const place of data.results) {
       const item = document.createElement('li');
-      const choose = button(place.label, () => travel(place));
-      choose.append(text('small', place.source));
+      const choose = button('', async () => {
+        const input = byId('search-year');
+        const raw = input.value.trim();
+        const year = raw ? Number(raw) : null;
+        if (raw && (!Number.isInteger(year) || year === 0 || Math.abs(year) > 100000)) {
+          input.setCustomValidity('Anna kelvollinen vuosiluku. Vuotta nolla ei käytetä.');
+          input.reportValidity();
+          return;
+        }
+        input.setCustomValidity('');
+        choose.disabled = true;
+        try { await travel(place, year); if (current === place && !placeRequest?.signal.aborted) openExplorer(); }
+        finally { choose.disabled = false; }
+      });
+      choose.className = 'place-choice';
+      const heading = text('strong', place.name || place.label.split(',')[0]);
+      const details = text('span', place.label === place.name ? '' : place.label, 'fine');
+      const source = text('small', 'Paikkatieto: ' + (place.source || 'tuntematon'));
+      const action = text('span', 'Tutki paikan historiaa →', 'place-action');
+      choose.append(heading, details, source, action);
       item.append(choose);
       byId('results').append(item);
     }
@@ -551,11 +582,13 @@ function selectStation(index) {
   const locationInfo = photo.locationEvidence === 'title' ? ' · Paikkayhteys otsikon perusteella; kuvauspaikka ei ole varmistettu' : coords;
   byId('explore-photo-detail').textContent = `Lähteen ilmoittama kuvausaika: ${photo.date || 'ei tarkkaa päiväystä'}${locationInfo} · ${photo.kind || 'Kuva-aineisto'}`;
   byId('explore-authenticity').textContent = 'LÄHDEAINEISTO · EI 3D-REKONSTRUKTIO';
+  byId('selected-photo').hidden = false;
   byId('explore-counter').textContent = `${index + 1} / ${media.length} kuvauspistettä`;
   byId('explore-prev').disabled = index === 0;
   byId('explore-next').disabled = index === media.length - 1;
   safeCredit(photo);
   showStations();
+  renderGallery();
   refreshPhotoMarkers();
   applyExploreTransform();
 }
@@ -628,6 +661,36 @@ function showEmptyExplorer() {
     refreshPhotoMarkers();
     applyExploreTransform();
 }
+function renderGallery() {
+  const grid = byId('gallery-grid');
+  grid.replaceChildren();
+  const count = media.length;
+  byId('gallery-count').textContent = count + ' / ' + allMedia.length + ' löytöä';
+  byId('gallery-empty').hidden = count > 0;
+  media.forEach((item,index) => {
+    const card = button('', () => {
+      selectStation(index);
+      byId('selected-photo').scrollIntoView({ behavior:motion.matches ? 'instant' : 'smooth', block:'start' });
+      byId('explore-photo-title').setAttribute('tabindex','-1');
+      byId('explore-photo-title').focus({preventScroll:true});
+    });
+    card.className = 'gallery-card';
+    card.setAttribute('aria-label', 'Avaa kuva ' + (index+1) + ': ' + item.title);
+    card.setAttribute('aria-pressed', String(!byId('selected-photo').hidden && photoIndex === index));
+    const thumbnail = document.createElement('img');
+    thumbnail.src = item.src;
+    thumbnail.alt = '';
+    thumbnail.loading = index < 6 ? 'eager' : 'lazy';
+    thumbnail.decoding = 'async';
+    card.append(thumbnail);
+    const copy = text('span', '', 'gallery-card-text');
+    copy.append(text('strong', item.title));
+    copy.append(text('span', item.date || (Number.isInteger(item.year) ? String(item.year) : 'Ajoitus tuntematon'), 'fine'));
+    copy.append(text('small', item.locationEvidence === 'title' ? 'Paikka päätelty nimestä' : 'Koordinaatteihin liittyvä löytö'));
+    card.append(copy);
+    grid.append(card);
+  });
+}
 function applySourceFilters() {
   const category = byId('source-category').value;
   const time = byId('source-time').value;
@@ -640,10 +703,12 @@ function applySourceFilters() {
   });
   photoIndex = 0;
   byId('source-filter-status').textContent = 'Näytetään ' + media.length + ' / ' + allMedia.length + ' löydöstä.' +
-    (currentYear === null && (time === 'near' || time === 'exact') ? ' Valitse ensin vuosiluku karttanäkymässä.' : '');
+    (currentYear === null && (time === 'near' || time === 'exact') ? ' Valitse ensin vuosiluku yläreunasta.' : '');
   if (explorerVisible()) {
-    if (media.length) selectStation(0);
-    else { showEmptyExplorer(); showStations(); refreshPhotoMarkers(); }
+    byId('selected-photo').hidden = true;
+    renderGallery();
+    showStations();
+    refreshPhotoMarkers();
   } else if (media.length) renderPhoto();
   else { clearPhoto(); byId('photo-number').textContent = ''; }
 }
@@ -655,14 +720,17 @@ function openExplorer() {
   byId('explorer').hidden = false;
   byId('back').hidden = true;
   byId('explore-title').textContent = current.name || 'Karttapiste';
-  byId('explore-era').textContent = `${currentYear === null ? 'NYKYHETKI' : `VUOSI ${yearLabel(currentYear)}`} · OIKEAT LÄHTEET, EI AUTOMAATTISESTI HISTORIALLINEN KATUKUVA`;
+  byId('explore-era').textContent = `${currentYear === null ? 'KAIKKI VUODET' : `VUOSI ${yearLabel(currentYear)}`} · OIKEAT LÄHTEET, EI HISTORIALLINEN 3D-KATUKUVA`;
+  byId('explore-year').value = currentYear ?? '';
+  byId('selected-photo').hidden = true;
   byId('explore-location').textContent = `${pointLabel(current.lat, current.lon)} · ${current.label || current.name || ''}`;
   byId('explore-demo').hidden = !showDemo;
   byId('explore-empty').textContent = currentYear === null ? 'Tästä pisteestä ei löydy käyttökelpoista valokuvaa. Voit silti tutkia karttaa ja Wikipedia-kohteita.' : `Vuodelta ${yearLabel(currentYear)} ei löytynyt varmennettua kuvaa tältä paikalta. Nykykartta ei kuvaa historiallista vuotta.`;
   renderExplorerNearby();
   buildExplorerMap();
-  if (media.length) selectStation(Math.min(photoIndex, media.length - 1));
-  else showEmptyExplorer();
+  renderGallery();
+  showStations();
+  if (!media.length) showEmptyExplorer();
   requestAnimationFrame(() => { explorerMap?.invalidateSize({ pan:false }); refreshPhotoMarkers(); });
   window.scrollTo(0,0);
   byId('explore-close').focus({ preventScroll:true });
@@ -676,6 +744,24 @@ function closeExplorer() {
   requestAnimationFrame(() => { (isStreet ? roadMap : map).invalidateSize({ pan:false }); });
 }
 byId('enter-explorer').addEventListener('click', openExplorer);
+byId('explore-year-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!current) return;
+  const input = byId('explore-year');
+  const raw = input.value.trim();
+  const year = raw ? Number(raw) : null;
+  if (raw && (!Number.isInteger(year) || year === 0 || Math.abs(year) > 100000)) {
+    input.setCustomValidity('Anna kelvollinen vuosiluku. Vuotta nolla ei käytetä.');
+    input.reportValidity();
+    return;
+  }
+  input.setCustomValidity('');
+  const point = current;
+  closeExplorer();
+  await travel(point,year,false);
+  if (current === point && !placeRequest?.signal.aborted) openExplorer();
+});
+byId('explore-year').addEventListener('input', event => event.target.setCustomValidity(''));
 byId('explore-close').addEventListener('click', closeExplorer);
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && explorerVisible()) { event.preventDefault(); closeExplorer(); }
