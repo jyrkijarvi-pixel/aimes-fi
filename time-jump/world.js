@@ -13,6 +13,7 @@ let isStreet = false;
 let current = null;
 let currentYear = null;
 let media = [];
+let allMedia = [];
 let photoIndex = 0;
 let nearbyPlaces = [];
 let showDemo = false;
@@ -205,8 +206,10 @@ function renderPhoto() {
   caption.replaceChildren(text('strong', image.title), document.createTextNode(`${image.artist} · `));
   caption.append(image.licenseUrl ? link(image.license, image.licenseUrl) : document.createTextNode(image.license));
   if (image.date) caption.append(document.createTextNode(` · Kuvausaika lähteen mukaan: ${image.date}`));
-  if (image.distance !== undefined) caption.append(document.createTextNode(` · Paikkatieto: ${formatDistance(image.distance)} kohdepisteestä`));
-  caption.append(document.createElement('br'), link('Kuvan lähde Wikimedia Commonsissa ↗', image.url));
+  if (image.locationEvidence === 'title') caption.append(document.createTextNode(' · Paikkayhteys: nimi tai otsikko; tarkkaa kuvauspaikkaa ei vahvistettu'));
+  else if (Number.isFinite(image.distance)) caption.append(document.createTextNode(` · Paikkatieto: ${formatDistance(image.distance)} kohdepisteestä`));
+  if (image.kind) caption.append(document.createTextNode(` · Aineiston tyyppi: ${image.kind}`));
+  caption.append(document.createElement('br'), link('Lähde Wikimedia Commonsissa ↗', image.url));
   if (image.original) caption.append(document.createTextNode(' · '), link('Museon tietue Finnassa ↗', image.original));
   if (image.restrictions) caption.append(text('p', `Muut käyttöehdot lähteessä: ${image.restrictions}`));
   byId('photo').hidden = false;
@@ -304,10 +307,14 @@ async function travel(point, year = null, move = true) {
   resetReconstruction();
   byId('context').replaceChildren();
   media = [];
+  allMedia = [];
+  byId('source-category').value = 'all';
+  byId('source-time').value = 'all';
+  byId('source-filter-status').textContent = '';
   nearbyPlaces = [];
   showDemo = false;
   clearPhoto();
-  byId('media-title').textContent = year === null ? 'Valokuvia paikan ympäristöstä' : `Aineistoa vuodelta ${yearLabel(year)}`;
+  byId('media-title').textContent = year === null ? 'Paikan kuvia ja historiaa' : `Löytöjä ajan ${yearLabel(year)} ympäriltä`;
   byId('media-note').textContent = '';
   byId('travel-status').textContent = 'Etsitään paikan kuvia ja lähikohteita…';
   if (move) {
@@ -323,18 +330,18 @@ async function travel(point, year = null, move = true) {
     byId('demo').hidden = !data.demo;
     // A pre-generated scene exists only for the Helsinki 1952 demonstration.
     byId('reconstruction-option').hidden = !data.demo;
-    media = data.photos;
+    allMedia = data.photos || [];
+    media = allMedia;
     photoIndex = 0;
     nearbyPlaces = data.wiki?.nearby || [];
     showDemo = !!data.demo;
     if (media.length) {
-      byId('media-note').textContent = year === null ? 'Kuvat on paikannettu lähialueelle. Niiden kuvausvuodet vaihtelevat.' : (data.demo ? 'Arkistovalokuva ja erillinen elämyksellinen rekonstruktio.' : 'Kuvausvuosi perustuu kuvan lähdetietoihin. Kartta kuvaa nykyhetkeä.');
+      byId('media-note').textContent = year === null ? 'Kuvia ja dokumentteja lähialueelta sekä paikannimen perusteella. Päiväykset vaihtelevat.' : 'Eri vuosien aineistot ovat mukana. Valitse aihe ja ajanjakso Tutki-näkymässä. Tarkista kuvausvuosi ja sijaintitiedon varmuus lähteestä.';
       renderPhoto();
     } else {
       byId('media-note').textContent = !data.availability.photos
         ? 'Kuvahaku ei vastannut. Voit jatkaa kartalla tai yrittää uudelleen.'
-        : year === null ? 'Läheltä ei löytynyt paikkatiedolla ja käyttöluvalla varustettua valokuvaa.'
-        : 'Tälle paikalle ja vuodelle ei löytynyt varmennettua valokuvaa tai rakennettua aikamatkanäkymää. Kartta kuvaa nykyhetkeä.';
+        : 'Wikimedia Commonsista ei löytynyt tähän hakuun sopivaa, sallittua aineistoa. Kaikkien museoiden aineistot eivät kuulu tähän hakuun.';
     }
     renderContext(data.wiki, data.availability.wiki);
   } catch (error) {
@@ -482,7 +489,7 @@ function safeCredit(image) {
   credit.replaceChildren();
   if (!image) return;
   credit.append(document.createTextNode(`${image.artist || 'Tekijä tuntematon'} · ${image.license || 'Lisenssi tarkistettava'} · `));
-  if (image.url) credit.append(link('Alkuperäinen kuva Wikimedia Commonsissa ↗', image.url));
+  if (image.url) credit.append(link('Alkuperäinen aineisto Wikimedia Commonsissa ↗', image.url));
   if (image.licenseUrl) credit.append(document.createTextNode(' · '), link('Lisenssi ↗', image.licenseUrl));
   if (image.original) credit.append(document.createTextNode(' · '), link('Museon alkuperäinen tietue ↗', image.original));
   if (image.restrictions) credit.append(text('p', `Lähteen muut ehdot: ${image.restrictions}`));
@@ -491,7 +498,7 @@ function showStations() {
   const list = byId('explore-stations');
   list.replaceChildren();
   byId('explore-stations-count').textContent = `(${media.length})`;
-  if (!media.length) { list.append(text('p', 'Tälle vuodelle ei löytynyt todennettua, paikkatiedolla varustettua valokuvaa.', 'fine')); return; }
+  if (!media.length) { list.append(text('p', 'Valitulla suodatuksella ei ole osumia. Kokeile Kaikki aineistot ja Kaikki vuodet.', 'fine')); return; }
   media.forEach((photo, index) => {
     const item = button('', () => selectStation(index));
     item.className = 'station';
@@ -504,6 +511,7 @@ function showStations() {
     const details = document.createElement('span');
     details.append(text('small', `KUVAUSPISTE ${index + 1}`), text('strong', photo.title));
     details.append(text('span', `Aineiston päiväys: ${photo.date || 'ei tarkkaa vuotta'}`, 'fine'));
+    if (photo.locationEvidence === 'title') details.append(text('span', 'Paikkayhteys vain nimen perusteella', 'fine'));
     item.append(details);
     list.append(item);
   });
@@ -534,14 +542,15 @@ function selectStation(index) {
   exploreZoom = 1; exploreX = 0; exploreY = 0;
   stageImage.hidden = false;
   stageImage.src = photo.src;
-  stageImage.alt = `${photo.title}. Aito lähdekuva; ei historiallinen 3D-näkymä.`;
+  stageImage.alt = `${photo.title}. Lähdeaineisto; ei historiallinen 3D-näkymä.`;
   stageImage.onerror = () => { stageImage.hidden = true; byId('explore-empty').hidden = false; byId('explore-empty').textContent = 'Valokuva ei latautunut. Alkuperäinen kuva on avattavissa lähdelinkistä.'; };
   stageImage.onload = () => { byId('explore-empty').hidden = true; };
   byId('explore-empty').hidden = true;
   byId('explore-photo-title').textContent = photo.title;
   const coords = Number.isFinite(photo.lat) && Number.isFinite(photo.lon) ? ` · ${photo.locationApprox ? 'Arvioitu kuvauspaikka' : 'Kuvan paikkatieto'}: ${pointLabel(photo.lat, photo.lon)}` : '';
-  byId('explore-photo-detail').textContent = `Lähteen ilmoittama kuvausaika: ${photo.date || 'ei tarkkaa päiväystä'}${coords}`;
-  byId('explore-authenticity').textContent = 'AITO LÄHDEKUVA · EI 3D-REKONSTRUKTIO';
+  const locationInfo = photo.locationEvidence === 'title' ? ' · Paikkayhteys otsikon perusteella; kuvauspaikka ei ole varmistettu' : coords;
+  byId('explore-photo-detail').textContent = `Lähteen ilmoittama kuvausaika: ${photo.date || 'ei tarkkaa päiväystä'}${locationInfo} · ${photo.kind || 'Kuva-aineisto'}`;
+  byId('explore-authenticity').textContent = 'LÄHDEAINEISTO · EI 3D-REKONSTRUKTIO';
   byId('explore-counter').textContent = `${index + 1} / ${media.length} kuvauspistettä`;
   byId('explore-prev').disabled = index === 0;
   byId('explore-next').disabled = index === media.length - 1;
@@ -604,20 +613,7 @@ function toggleExplorerStreet() {
   }
 }
 byId('explore-road').addEventListener('click', toggleExplorerStreet);
-function openExplorer() {
-  if (!current) return;
-  byId('atlas').hidden = true;
-  byId('explorer').hidden = false;
-  byId('back').hidden = true;
-  byId('explore-title').textContent = current.name || 'Karttapiste';
-  byId('explore-era').textContent = `${currentYear === null ? 'NYKYHETKI' : `VUOSI ${yearLabel(currentYear)}`} · OIKEAT LÄHTEET, EI AUTOMAATTISESTI HISTORIALLINEN KATUKUVA`;
-  byId('explore-location').textContent = `${pointLabel(current.lat, current.lon)} · ${current.label || current.name || ''}`;
-  byId('explore-demo').hidden = !showDemo;
-  byId('explore-empty').textContent = currentYear === null ? 'Tästä pisteestä ei löydy käyttökelpoista valokuvaa. Voit silti tutkia karttaa ja Wikipedia-kohteita.' : `Vuodelta ${yearLabel(currentYear)} ei löytynyt varmennettua kuvaa tältä paikalta. Nykykartta ei kuvaa historiallista vuotta.`;
-  renderExplorerNearby();
-  buildExplorerMap();
-  if (media.length) selectStation(Math.min(photoIndex, media.length - 1));
-  else {
+function showEmptyExplorer() {
     stageImage.hidden = true;
     stageImage.removeAttribute('src');
     byId('explore-empty').hidden = false;
@@ -631,7 +627,42 @@ function openExplorer() {
     showStations();
     refreshPhotoMarkers();
     applyExploreTransform();
-  }
+}
+function applySourceFilters() {
+  const category = byId('source-category').value;
+  const time = byId('source-time').value;
+  media = allMedia.filter(image => {
+    if (category !== 'all' && (image.category || 'other') !== category) return false;
+    if (time === 'unknown') return !Number.isInteger(image.year);
+    if (time === 'exact') return currentYear !== null && image.year === currentYear;
+    if (time === 'near') return currentYear !== null && Number.isInteger(image.year) && Math.abs(image.year - currentYear) <= 10;
+    return true;
+  });
+  photoIndex = 0;
+  byId('source-filter-status').textContent = 'Näytetään ' + media.length + ' / ' + allMedia.length + ' löydöstä.' +
+    (currentYear === null && (time === 'near' || time === 'exact') ? ' Valitse ensin vuosiluku karttanäkymässä.' : '');
+  if (explorerVisible()) {
+    if (media.length) selectStation(0);
+    else { showEmptyExplorer(); showStations(); refreshPhotoMarkers(); }
+  } else if (media.length) renderPhoto();
+  else { clearPhoto(); byId('photo-number').textContent = ''; }
+}
+byId('source-category').addEventListener('change', applySourceFilters);
+byId('source-time').addEventListener('change', applySourceFilters);
+function openExplorer() {
+  if (!current) return;
+  byId('atlas').hidden = true;
+  byId('explorer').hidden = false;
+  byId('back').hidden = true;
+  byId('explore-title').textContent = current.name || 'Karttapiste';
+  byId('explore-era').textContent = `${currentYear === null ? 'NYKYHETKI' : `VUOSI ${yearLabel(currentYear)}`} · OIKEAT LÄHTEET, EI AUTOMAATTISESTI HISTORIALLINEN KATUKUVA`;
+  byId('explore-location').textContent = `${pointLabel(current.lat, current.lon)} · ${current.label || current.name || ''}`;
+  byId('explore-demo').hidden = !showDemo;
+  byId('explore-empty').textContent = currentYear === null ? 'Tästä pisteestä ei löydy käyttökelpoista valokuvaa. Voit silti tutkia karttaa ja Wikipedia-kohteita.' : `Vuodelta ${yearLabel(currentYear)} ei löytynyt varmennettua kuvaa tältä paikalta. Nykykartta ei kuvaa historiallista vuotta.`;
+  renderExplorerNearby();
+  buildExplorerMap();
+  if (media.length) selectStation(Math.min(photoIndex, media.length - 1));
+  else showEmptyExplorer();
   requestAnimationFrame(() => { explorerMap?.invalidateSize({ pan:false }); refreshPhotoMarkers(); });
   window.scrollTo(0,0);
   byId('explore-close').focus({ preventScroll:true });
