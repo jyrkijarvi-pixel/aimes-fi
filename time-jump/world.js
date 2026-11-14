@@ -150,6 +150,43 @@ async function api(route, params, signal) {
   return data;
 }
 
+// Optional Reconstruction Mode: deliberately no image request until a visitor clicks.
+function resetReconstruction() {
+  const option = byId('reconstruction-option');
+  const panel = byId('reconstruction-panel');
+  const button = byId('reconstruction-toggle');
+  const picture = byId('reconstruction-image');
+  option.hidden = true;
+  panel.hidden = true;
+  button.setAttribute('aria-expanded', 'false');
+  button.textContent = '✨ Näytä AI-rekonstruktio';
+  picture.removeAttribute('src');
+  picture.hidden = false;
+  byId('reconstruction-error').textContent = '';
+}
+byId('reconstruction-toggle').addEventListener('click', () => {
+  const panel = byId('reconstruction-panel');
+  const button = byId('reconstruction-toggle');
+  const picture = byId('reconstruction-image');
+  const opening = panel.hidden;
+  panel.hidden = !opening;
+  button.setAttribute('aria-expanded', String(opening));
+  button.textContent = opening ? 'Piilota AI-rekonstruktio' : '✨ Näytä AI-rekonstruktio';
+  if (opening) {
+    picture.hidden = false;
+    picture.onerror = () => {
+      picture.hidden = true;
+      byId('reconstruction-error').textContent = 'Rekonstruktiokuva ei latautunut. Voit avata Helsinki 1952 -koeympäristön linkistä.';
+    };
+    // This file already belongs to the Helsinki 1952 demo; never claim a live AI render.
+    picture.src = 'helsinki-1952/images/market.webp';
+  } else {
+    picture.removeAttribute('src');
+    picture.onerror = null;
+    byId('reconstruction-error').textContent = '';
+  }
+});
+
 function clearPhoto() {
   loadSequence++;
   byId('photo').hidden = true;
@@ -264,6 +301,7 @@ async function travel(point, year = null, move = true) {
   byId('year').setCustomValidity('');
   byId('street').href = `https://www.openstreetmap.org/?mlat=${point.lat}&mlon=${point.lon}#map=13/${point.lat}/${point.lon}`;
   byId('demo').hidden = true;
+  resetReconstruction();
   byId('context').replaceChildren();
   media = [];
   nearbyPlaces = [];
@@ -283,6 +321,8 @@ async function travel(point, year = null, move = true) {
     if (request.signal.aborted) return;
     byId('travel-status').textContent = '';
     byId('demo').hidden = !data.demo;
+    // A pre-generated scene exists only for the Helsinki 1952 demonstration.
+    byId('reconstruction-option').hidden = !data.demo;
     media = data.photos;
     photoIndex = 0;
     nearbyPlaces = data.wiki?.nearby || [];
@@ -321,6 +361,7 @@ byId('back').addEventListener('click', () => {
   streetView(false);
   current = null;
   currentYear = null;
+  resetReconstruction();
   marker.remove();
   roadMarker?.remove();
   byId('destination').hidden = true;
