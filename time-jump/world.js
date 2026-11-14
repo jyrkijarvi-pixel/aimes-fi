@@ -326,7 +326,7 @@ async function travel(point, year = null, move = true) {
   try {
     const params = { lat:point.lat, lon:point.lon, name:point.kind === 'point' ? '' : point.name, kind:point.kind || 'place', article:point.article || '', year:year ?? '' };
     const data = await api('place', params, request.signal);
-    if (request.signal.aborted) return;
+    if (request.signal.aborted) return false;
     byId('travel-status').textContent = '';
     byId('demo').hidden = !data.demo;
     // A pre-generated scene exists only for the Helsinki 1952 demonstration.
@@ -347,11 +347,13 @@ async function travel(point, year = null, move = true) {
         : 'Wikimedia Commonsista ei löytynyt tähän hakuun sopivaa, sallittua aineistoa. Kaikkien museoiden aineistot eivät kuulu tähän hakuun.';
     }
     renderContext(data.wiki, data.availability.wiki);
+    return true;
   } catch (error) {
     if (!request.signal.aborted) {
       byId('gallery-count').textContent = 'Haku epäonnistui';
       byId('travel-status').textContent = `Aineiston lataus epäonnistui. ${error.message}`;
     }
+    return false;
   }
 }
 
@@ -406,8 +408,7 @@ byId('search').addEventListener('submit', async event => {
     if (yr && (!Number.isInteger(Number(yr)) || Number(yr) === 0 || Math.abs(Number(yr)) > 100000)) {
       byId('search-year').setCustomValidity('Anna kelvollinen vuosiluku.'); byId('search-year').reportValidity(); return;
     }
-    await travel(pointAt(L.latLng(+a,+b)), yr ? Number(yr) : null);
-    openExplorer();
+    if (await travel(pointAt(L.latLng(+a,+b)), yr ? Number(yr) : null)) openExplorer();
     return;
   }
   if (q.length < 2) { byId('search-status').textContent = 'Kirjoita vähintään kaksi merkkiä.'; return; }
@@ -415,7 +416,6 @@ byId('search').addEventListener('submit', async event => {
   try {
     const data = await api('search', { q }, request.signal);
     if (request.signal.aborted) return;
-    const selectedYear = byId('search-year').value.trim();
     for (const place of data.results) {
       const item = document.createElement('li');
       const choose = button('', async () => {
@@ -429,7 +429,7 @@ byId('search').addEventListener('submit', async event => {
         }
         input.setCustomValidity('');
         choose.disabled = true;
-        try { await travel(place, year); if (current === place && !placeRequest?.signal.aborted) openExplorer(); }
+        try { const ok = await travel(place, year); if (ok && current === place && !placeRequest?.signal.aborted) openExplorer(); }
         finally { choose.disabled = false; }
       });
       choose.className = 'place-choice';
@@ -758,8 +758,8 @@ byId('explore-year-form').addEventListener('submit', async event => {
   input.setCustomValidity('');
   const point = current;
   closeExplorer();
-  await travel(point,year,false);
-  if (current === point && !placeRequest?.signal.aborted) openExplorer();
+  const ok = await travel(point,year,false);
+  if (ok && current === point && !placeRequest?.signal.aborted) openExplorer();
 });
 byId('explore-year').addEventListener('input', event => event.target.setCustomValidity(''));
 byId('explore-close').addEventListener('click', closeExplorer);
