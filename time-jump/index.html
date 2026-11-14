@@ -98,7 +98,7 @@
     <div class="explorer-body">
       <div class="explorer-main">
         <div id="explore-stage" class="explore-stage" tabindex="0" aria-label="Tutki kuvaa. Voit suurentaa kuvaa ja siirtää suurennettua kuvaa hiirellä.">
-          <div class="stage-label" id="explore-authenticity">AITO LÄHDEKUVA · EI 3D-REKONSTRUKTIO</div>
+          <div class="stage-label" id="explore-authenticity">LÄHDEAINEISTO · EI 3D-REKONSTRUKTIO</div>
           <img id="explore-image" alt="" draggable="false" hidden>
           <p id="explore-empty" class="explore-empty" hidden>Ei varmennettua kuvaa tästä paikasta ja ajasta. Karttaa ja lähikohteita voi silti tutkia.</p>
           <div class="stage-counter" id="explore-counter"></div>
@@ -116,7 +116,7 @@
             <button class="outline" id="explore-prev" type="button">← Edellinen kuvauspiste</button>
             <button class="outline" id="explore-next" type="button">Seuraava kuvauspiste →</button>
           </div>
-          <p class="fine">Voit tutkia löytynyttä valokuvaa suurentamalla ja liikuttamalla sitä. Eri kuvauspisteet ovat todellisia erillisiä kuvia, eivät keinotekoisesti tehtyä käveltävää 3D-maailmaa. Kartan kohteet kuvaavat nykyistä maantiedettä.</p>
+          <p class="fine">Voit tutkia löytynyttä valokuvaa suurentamalla ja liikuttamalla sitä. Kuvat ja muut lähdeaineistot ovat erillisiä dokumentteja, eivät keinotekoisesti tehtyä 3D-maailmaa. Osa löydöistä liittyy paikkaan vain nimensä perusteella; niiden sijainti ei ole varmistettu. Kartan kohteet kuvaavat nykyistä maantiedettä.</p>
           <a id="explore-demo" class="primary demo-link" href="helsinki-1952/" hidden>Astu Helsinki 1952 -rekonstruktioon ↗</a>
         </div>
       </div>
@@ -129,6 +129,28 @@
           <p class="fine">Katukartta tarvitsee verkkoyhteyden eikä esitä valittua historiallista vuotta.</p>
         </section>
         <section class="side-section">
+          <h3>Löydä oma polkusi</h3>
+          <p class="fine">Kaikki löydetyt aineistot ovat mukana: myös ihmiset, sisäkuvat, hautakivet ja muut aikakaudet. Rajaa vain halutessasi.</p>
+          <div class="source-filters">
+            <label for="source-category">Aineiston aihe</label>
+            <select id="source-category">
+              <option value="all">Kaikki aineistot</option>
+              <option value="places">Kadut, rakennukset ja maisemat</option>
+              <option value="people">Ihmiset ja muotokuvat</option>
+              <option value="interior">Sisäkuvat ja arki</option>
+              <option value="memory">Hautakivet ja muistomerkit</option>
+              <option value="maps">Kartat ja piirrokset</option>
+              <option value="other">Muut löydöt</option>
+            </select>
+            <label for="source-time">Aikakausi</label>
+            <select id="source-time">
+              <option value="all">Kaikki vuodet</option>
+              <option value="exact">Vain valittu vuosi</option>
+              <option value="near">± 10 vuotta</option>
+              <option value="unknown">Vuosi tuntematon</option>
+            </select>
+            <p class="fine" id="source-filter-status" role="status"></p>
+          </div>
           <h3>Kuvauspisteet <span id="explore-stations-count"></span></h3>
           <div id="explore-stations" class="station-list"></div>
         </section>
