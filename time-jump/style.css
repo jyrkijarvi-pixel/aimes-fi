@@ -214,3 +214,19 @@ html { scrollbar-gutter: stable; }
   .explore-header-actions #explore-close { width:100%; }
 }
 @media(prefers-reduced-motion:reduce) { .gallery-card { transition:none; } }
+
+/* Etusivun kolme tutkimistapaa. Vanhoihin sisältönäkymiin ei kosketa. */
+.home-modes { margin:0 0 18px; }
+.home-modes-heading { font-size:.9rem; font-weight:700; margin:0 0 9px; color:var(--mint); }
+.home-modes-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.home-mode { text-align:left; display:flex; flex-direction:column; gap:4px; min-width:0; min-height:113px; padding:12px 10px; background:#102e32; border:1px solid #547372; color:var(--ink); text-decoration:none; font:inherit; border-radius:4px; cursor:pointer; }
+.home-mode:hover, .home-mode:focus-visible { border-color:var(--mint); background:#1b4143; }
+.home-mode[aria-pressed="true"] { border-color:var(--warm); background:#254037; box-shadow:inset 0 0 0 1px var(--warm); }
+.home-mode-number { color:var(--mint); font:.68rem/1.3 Consolas,monospace; letter-spacing:.025em; }
+.home-mode strong { font-size:.91rem; line-height:1.2; }
+.home-mode small { font-size:.71rem; line-height:1.35; color:var(--muted); }
+.home-mode-link { border-color:#9b8465; }
+.home-mode-link .home-mode-number { color:var(--warm); }
+.home-modes-status { color:var(--muted); font-size:.78rem; margin:9px 0 0; }
+@media(max-width:1120px) { .home-modes-grid { grid-template-columns:1fr; } .home-mode { min-height:0; } }
+@media(min-width:1121px) and (max-width:1440px) { .home-modes-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .home-mode-link { grid-column:1/-1; } }

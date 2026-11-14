@@ -370,7 +370,23 @@ byId('time').addEventListener('submit', event => {
 });
 byId('present').addEventListener('click', () => { if (current) travel(current, null, false); });
 
-byId('helsinki').addEventListener('click', () => travel({ name:'Helsinki', label:'Helsinki, Suomi', lat:60.1699, lon:24.9384, article:'Helsinki' }, 1952));
+// Etusivun kolme valintaa: molemmat ensimmäiset käyttävät samaa nykyistä hakua.
+let homeMode = 'gallery';
+function chooseHomeMode(mode) {
+  homeMode = mode;
+  byId('mode-sources').setAttribute('aria-pressed', String(mode === 'sources'));
+  byId('mode-gallery').setAttribute('aria-pressed', String(mode === 'gallery'));
+  byId('mode-summary').textContent = mode === 'sources'
+    ? 'Oikea historia valittu: etsi paikka ja vuosi. Näet valokuvat, lähteet ja Wikipedia-tiedot.'
+    : 'Kuvapolku valittu: etsi paikka ja vuosi, niin galleria aukeaa.';
+  byId('query').focus({preventScroll:true});
+}
+byId('mode-sources').addEventListener('click', () => chooseHomeMode('sources'));
+byId('mode-gallery').addEventListener('click', () => chooseHomeMode('gallery'));
+function afterHomeTravel(ok, place) {
+  if (ok && homeMode === 'gallery' && current === place && !placeRequest?.signal.aborted) openExplorer();
+}
+
 byId('back').addEventListener('click', () => {
   placeRequest?.abort();
   streetView(false);
@@ -408,7 +424,9 @@ byId('search').addEventListener('submit', async event => {
     if (yr && (!Number.isInteger(Number(yr)) || Number(yr) === 0 || Math.abs(Number(yr)) > 100000)) {
       byId('search-year').setCustomValidity('Anna kelvollinen vuosiluku.'); byId('search-year').reportValidity(); return;
     }
-    if (await travel(pointAt(L.latLng(+a,+b)), yr ? Number(yr) : null)) openExplorer();
+    const selectedPoint = pointAt(L.latLng(+a,+b));
+    const ok = await travel(selectedPoint, yr ? Number(yr) : null);
+    afterHomeTravel(ok, selectedPoint);
     return;
   }
   if (q.length < 2) { byId('search-status').textContent = 'Kirjoita vähintään kaksi merkkiä.'; return; }
@@ -429,7 +447,7 @@ byId('search').addEventListener('submit', async event => {
         }
         input.setCustomValidity('');
         choose.disabled = true;
-        try { const ok = await travel(place, year); if (ok && current === place && !placeRequest?.signal.aborted) openExplorer(); }
+        try { const ok = await travel(place, year); afterHomeTravel(ok, place); }
         finally { choose.disabled = false; }
       });
       choose.className = 'place-choice';
