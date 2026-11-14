@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a171a">
+<title>AIMES – TIME JUMP · Tutki historian ympäristöjä</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="style.css">
+<script defer src="vendor/leaflet.js"></script>
+<script defer src="world.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./">AIMES <span>WORLD EXPLORER 03 · TIME JUMP -VERKKOKOKEILU</span></a>
+  <button class="outline" id="back" type="button" hidden>← Maailmankartalle</button>
+</header>
+<main>
+  <div class="atlas" id="atlas">
+    <section class="map-panel" aria-label="Maailmankartta">
+      <div id="street-map" aria-label="Nykyinen katukartta" hidden></div>
+      <div id="map" aria-label="Maailmankartta. Siirrä karttaa nuolinäppäimillä ja valitse kartan keskipiste erillisellä painikkeella."></div>
+      <div class="zoom-buttons" role="group" aria-label="Kartan zoomaus">
+        <button class="outline" id="zoom-in" type="button" aria-label="Lähennä">+</button>
+        <button class="outline" id="zoom-out" type="button" aria-label="Loitonna">−</button>
+      </div>
+      <div class="map-controls">
+        <button class="outline" id="world-view" type="button">Koko maailma</button>
+        <button class="outline" id="center" type="button">Valitse keskipiste</button>
+      </div>
+      <button type="button" class="outline map-label" id="detail-toggle" aria-pressed="false">Katukartta</button>
+    </section>
+    <section class="search-panel" id="search-panel">
+      <p class="eyebrow">AIMES / AIKAMATKAT</p>
+      <h1>Maailma<br> on avoinna.</h1>
+      <p class="intro">Valitse piste kartalta tai etsi paikka nimellä. Mihin haluaisit matkustaa?</p>
+      <form id="search">
+        <label for="query">Paikka tai koordinaatit</label>
+        <div class="search-row"><input id="query" required maxlength="140" placeholder="Esim. Tokio tai 35.68, 139.76" autocomplete="off"><button class="primary" type="submit">Hae</button></div>
+      </form>
+      <p id="search-status" class="status" role="status"></p>
+      <ul id="results" class="results"></ul>
+      <button class="featured" id="helsinki" type="button"><span>AIKAMATKADEMO</span><strong>Helsinki, kesä 1952</strong><b aria-hidden="true">↗</b></button>
+      <p class="fine">Maat, kaupungit, kylät ja verkon kautta myös osoitteet. Kartan voi avata myös ilman yhteyttä.</p>
+    </section>
+    <section id="destination" class="destination" aria-labelledby="place-title" hidden>
+      <header class="place-head">
+        <p class="eyebrow" id="coordinates"></p>
+        <h2 id="place-title" tabindex="-1"></h2>
+        <p class="place-label" id="place-label"></p>
+        <form id="time" class="time">
+          <label for="year">Matkan vuosi</label>
+          <div class="search-row"><input id="year" type="number" min="-100000" max="100000" step="1" placeholder="Nykyhetki"><button class="primary" type="submit">Siirry</button><button class="outline" id="present" type="button">Nykyhetki</button></div>
+          <small>Tyhjä kenttä näyttää nykyisen paikan aineistoa. Käytä miinusmerkkiä vuosille eaa.</small>
+        </form>
+      </header>
+      <p id="travel-status" class="status" role="status"></p>
+      <section class="media" aria-labelledby="media-title">
+        <h3 id="media-title"></h3>
+        <p id="media-note" class="status"></p>
+        <figure id="photo" hidden>
+          <img id="photo-image" alt="">
+          <figcaption id="photo-credit"></figcaption>
+        </figure>
+        <div id="photo-controls" class="photo-controls" hidden>
+          <button class="outline" id="prev" type="button" aria-label="Edellinen kuva">←</button><span id="photo-number" aria-live="polite"></span><button class="outline" id="next" type="button" aria-label="Seuraava kuva">→</button>
+        </div>
+        <button class="primary explore-cta" id="enter-explorer" type="button">Astu tutkimaan tätä paikkaa →</button>
+        <a class="primary demo-link" id="demo" href="helsinki-1952/" hidden>Astu Helsinkiin 1952 ↗</a>
+      </section>
+      <section id="context" class="context" aria-label="Paikkatietoa ja lähikohteita"></section>
+      <p class="fine map-links"><a id="street" href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">Avaa nykyinen katukartta OpenStreetMapissa ↗</a></p>
+    </section>
+  </div>
+  <section id="explorer" class="explorer" aria-label="Paikan tutkimustila" hidden>
+    <header class="explorer-header">
+      <div>
+        <p class="eyebrow">AIMES / MAAILMAN TUTKIMINEN · 03</p>
+        <h2 id="explore-title"></h2>
+        <p id="explore-era" class="explorer-era"></p>
+      </div>
+      <button id="explore-close" class="outline" type="button">← Takaisin maailmankartalle</button>
+    </header>
+    <div class="explorer-body">
+      <div class="explorer-main">
+        <div id="explore-stage" class="explore-stage" tabindex="0" aria-label="Tutki kuvaa. Voit suurentaa kuvaa ja siirtää suurennettua kuvaa hiirellä.">
+          <div class="stage-label" id="explore-authenticity">AITO LÄHDEKUVA · EI 3D-REKONSTRUKTIO</div>
+          <img id="explore-image" alt="" draggable="false" hidden>
+          <p id="explore-empty" class="explore-empty" hidden>Ei varmennettua kuvaa tästä paikasta ja ajasta. Karttaa ja lähikohteita voi silti tutkia.</p>
+          <div class="stage-counter" id="explore-counter"></div>
+          <div class="stage-tools">
+            <button class="outline" id="explore-zoom-out" type="button" aria-label="Pienennä kuvaa">−</button>
+            <button class="outline" id="explore-zoom-in" type="button" aria-label="Suurenna kuvaa">+</button>
+            <button class="outline" id="explore-reset" type="button">Palauta näkymä</button>
+          </div>
+        </div>
+        <div class="explore-description">
+          <h3 id="explore-photo-title"></h3>
+          <p id="explore-photo-detail" class="status"></p>
+          <div id="explore-credit" class="explore-credit"></div>
+          <div class="stage-actions">
+            <button class="outline" id="explore-prev" type="button">← Edellinen kuvauspiste</button>
+            <button class="outline" id="explore-next" type="button">Seuraava kuvauspiste →</button>
+          </div>
+          <p class="fine">Voit tutkia löytynyttä valokuvaa suurentamalla ja liikuttamalla sitä. Eri kuvauspisteet ovat todellisia erillisiä kuvia, eivät keinotekoisesti tehtyä käveltävää 3D-maailmaa. Kartan kohteet kuvaavat nykyistä maantiedettä.</p>
+          <a id="explore-demo" class="primary demo-link" href="helsinki-1952/" hidden>Astu Helsinki 1952 -rekonstruktioon ↗</a>
+        </div>
+      </div>
+      <aside class="explorer-sidebar">
+        <section class="side-section">
+          <h3>Olet täällä</h3>
+          <p id="explore-location" class="fine"></p>
+          <div id="explore-map" aria-label="Nykyinen yleiskartta ja kuvauspisteet"></div>
+          <button id="explore-road" class="outline full" type="button">Näytä nykyinen katukartta</button>
+          <p class="fine">Katukartta tarvitsee verkkoyhteyden eikä esitä valittua historiallista vuotta.</p>
+        </section>
+        <section class="side-section">
+          <h3>Kuvauspisteet <span id="explore-stations-count"></span></h3>
+          <div id="explore-stations" class="station-list"></div>
+        </section>
+        <section class="side-section">
+          <h3>Paikkoja lähistöllä</h3>
+          <p class="fine">Wikipedian paikkatiedot voivat ohjata seuraavaan tutkimuskohteeseen.</p>
+          <div id="explore-nearby" class="explore-nearby"></div>
+        </section>
+      </aside>
+    </div>
+  </section>
+  <footer><span>Kartta ja lähikohteet kuvaavat nykyistä maantiedettä.</span><span><a href="https://www.naturalearthdata.com/about/terms-of-use/">Natural Earth</a> · <a href="https://www.geonames.org/export/">GeoNames</a> · <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a> · <a href="https://commons.wikimedia.org/">Wikimedia Commons</a></span></footer>
+</main>
+</body>
+</html>
