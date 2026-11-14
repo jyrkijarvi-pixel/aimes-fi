@@ -370,7 +370,12 @@ byId('time').addEventListener('submit', event => {
 });
 byId('present').addEventListener('click', () => { if (current) travel(current, null, false); });
 
-byId('helsinki').addEventListener('click', () => travel({ name:'Helsinki', label:'Helsinki, Suomi', lat:60.1699, lon:24.9384, article:'Helsinki' }, 1952));
+const helsinki1952 = { name:'Helsinki', label:'Helsinki, Suomi', lat:60.1699, lon:24.9384, article:'Helsinki' };
+byId('helsinki').addEventListener('click', () => travel({ ...helsinki1952 }, 1952));
+byId('home-gallery')?.addEventListener('click', async () => {
+  const place = { ...helsinki1952 };
+  if (await travel(place, 1952) && current === place && !placeRequest?.signal.aborted) openExplorer();
+});
 byId('back').addEventListener('click', () => {
   placeRequest?.abort();
   streetView(false);
@@ -612,6 +617,7 @@ function renderExplorerNearby() {
 function buildExplorerMap() {
   if (explorerMap) { explorerMap.invalidateSize({ pan:false }); return; }
   explorerMap = L.map('explore-map', { crs:L.CRS.EPSG4326, zoomControl:false, zoomAnimation:false, minZoom:-2, maxZoom:17, maxBounds:worldBounds });
+  explorerMap.setView([current.lat, current.lon], 5, { animate:false });
   explorerMap.attributionControl.setPrefix(false).addAttribution('<a href="https://www.naturalearthdata.com/about/terms-of-use/">Natural Earth · nykykartta</a>');
   explorerPhotoMarkers = L.layerGroup().addTo(explorerMap);
   explorerTargetMarker = L.circleMarker([0,0], {radius:11, color:'#ffe1a5', fillColor:'#0e302e', fillOpacity:.5, weight:2, interactive:false }).addTo(explorerMap);
