@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101b1b">
+<title>AIMES – Helsinki, kesä 1952</title>
+<link rel="stylesheet" href="style.css">
+<script defer src="places.js"></script>
+<script defer src="travel.js"></script>
+<script defer src="walk.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">AIMES <span> / AIKAMATKAT</span></div>
+  <button type="button" class="outline" id="home" hidden>Vaihda kohdetta</button>
+</header>
+<main>
+  <section class="arrival" id="arrival">
+    <img class="arrival-photo" src="images/harbour.webp" alt="Kuviteltu näkymä mereltä kohti kesäistä Kauppatoria ja Helsingin tuomiokirkkoa.">
+    <div class="arrival-content">
+      <div class="introduction">
+        <p class="eyebrow">SUOMI · HEINÄKUU 1952</p>
+        <h1>Helsinki,<br>kesä 1952</h1>
+        <p class="intro">Astu laiturille. Merituuli käy torin yli, ja kaupunki odottaa olympiavieraita.</p>
+      </div>
+      <form class="ticket" id="ticket">
+        <h2>Valitse matkasi</h2>
+        <label for="place">Paikka</label>
+        <select id="place"><option>Helsinki, Suomi</option><option disabled>Turku, Suomi (tulossa)</option><option disabled>Pariisi, Ranska (tulossa)</option></select>
+        <label for="period">Ajankohta</label>
+        <select id="period"><option>Heinäkuu 1952</option><option disabled>1800-luku (tulossa)</option><option disabled>1980-luku (tulossa)</option></select>
+        <button class="primary" type="submit">Astu vuoteen 1952 <span aria-hidden="true">→</span></button>
+        <p class="ticket-note">Ensimmäinen reitti on Helsinki 1952.</p>
+      </form>
+    </div>
+    <p class="credit">Tekoälyllä tehty historiallinen rekonstruktio</p>
+  </section>
+  <section id="journey" hidden aria-label="Helsinki 1952">
+    <nav class="journey-modes" aria-label="Tutkimistapa">
+      <button id="walk-mode-btn" class="outline" type="button" aria-pressed="true">◈ Vapaa tutkiminen</button>
+      <button id="photo-mode-btn" class="outline" type="button" aria-pressed="false">▣ Historialliset kuvanäkymät</button>
+      <span class="mode-desc">Koealue on tyylitelty tulkinta, ei tarkka historiallinen 3D-kaupunkimalli.</span>
+    </nav>
+    <section id="walk-shell" class="walk-shell" hidden aria-label="Käveltävä historiallinen koealue">
+      <div class="walk-viewport">
+        <canvas id="walk-canvas" tabindex="0" role="img" aria-label="Vapaasti tutkittava kolmiulotteinen havainneympäristö. WASD liikkuu, nuolet kääntävät näkymää. Lähellä löytöä E avaa lisätiedot."></canvas>
+        <div class="walk-top"><p class="eyebrow">TIME JUMP · HEINÄKUU 1952</p><h2 id="walk-title">Kauppatori</h2><p id="walk-subtitle"></p></div>
+        <div class="walk-watermark">KUVITTEELLINEN 3D-HAVAINNE · EI ARKISTOKUVA</div>
+        <div class="walk-interact" id="walk-interact" hidden><div><b id="walk-interact-label"></b><small id="walk-interact-help"></small></div><button class="primary" type="button" id="walk-interact-button">Tutki löytöä · E</button></div>
+        <div class="walk-crosshair" aria-hidden="true">+</div>
+        <div class="walk-pad" aria-label="Kosketusohjaimet">
+          <button type="button" data-walk-hold="turn-left" aria-label="Käänny vasemmalle">↶</button>
+          <button type="button" data-walk-hold="w" aria-label="Kävele eteenpäin">↑</button>
+          <button type="button" data-walk-hold="turn-right" aria-label="Käänny oikealle">↷</button>
+          <button type="button" data-walk-hold="a" aria-label="Sivuaskel vasemmalle">←</button>
+          <button type="button" data-walk-hold="s" aria-label="Kävele taaksepäin">↓</button>
+          <button type="button" data-walk-hold="d" aria-label="Sivuaskel oikealle">→</button>
+        </div>
+      </div>
+      <aside class="walk-side" aria-label="Kävelyn ohjeet ja pienoiskartta">
+        <div><p class="eyebrow">MISSÄ OLEN?</p><canvas id="walk-mini" width="236" height="170" aria-label="Koealueen pienoiskartta ja sijainti"></canvas><p class="small" id="walk-position"></p></div>
+        <div><h3>Tutki omin jaloin</h3><p>Liiku <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> -näppäimillä. Käänny <kbd>←</kbd> / <kbd>→</kbd> tai raahaa kuvaa hiirellä. <kbd>E</kbd> avaa lähellä olevan kohteen.</p><p>Keltaiset merkit avaavat lähdetietoa tai erikseen merkittyjä kuvitteellisia kohtaamisia.</p></div>
+        <div class="walk-side-actions">
+          <div class="walk-side-navigation"><button class="outline" type="button" id="walk-prev">← Edellinen alue</button><button class="outline" type="button" id="walk-next">Seuraava alue →</button></div>
+          <button class="outline" type="button" id="walk-reset">↻ Takaisin alueen alkuun</button>
+          <button class="outline" type="button" id="walk-photo">Katso myös kuvalliset näkymät</button>
+        </div>
+        <p class="small">Tämä on rajattu, vapaasti ohjattava 3D-havainnealue. Rakennusten muodot, etäisyydet ja ihmiset ovat taiteellisia tulkintoja; ne eivät ole tarkka rekonstruktio vuoden 1952 Helsingistä.</p>
+      </aside>
+    </section>
+    <div class="scene" id="scene">
+      <img id="view" class="scene-photo" alt="">
+      <div class="scene-head">
+        <div><p class="eyebrow">HELSINKI · HEINÄKUU 1952</p><h2 id="scene-title" tabindex="-1"></h2><p class="scene-line" id="scene-line"></p></div>
+        <button type="button" class="outline audio" id="sound" aria-pressed="false">Äänimaisema</button>
+      </div>
+      <div class="hotspots" id="hotspots" aria-label="Tutki näkymän yksityiskohtia"></div>
+      <p class="credit">Tekoälyllä tehty historiallinen rekonstruktio</p>
+    </div>
+    <nav id="route" class="route" aria-label="Pysähdykset"></nav>
+    <aside class="notes">
+      <details id="journal"><summary id="journal-label">Matkamuistiinpanot</summary><p id="empty">Tutki näkymien merkittyjä yksityiskohtia. Löydöt kertyvät tänne.</p><ul id="finds"></ul></details>
+      <details><summary>Kuvista, tiedoista ja äänistä</summary>
+        <p><strong>Todennettu tieto</strong> perustuu löydössä nimettyyn lähteeseen. <strong>Rekonstruktio</strong> tulkitsee aikakauden näkymää. Kuvakulmat, ihmiset ja pienet yksityiskohdat ovat tekijän tulkintaa. <strong>Kuvitteellinen</strong> tarkoittaa tätä matkaa varten kirjoitettua kohtausta tai esinettä.</p>
+        <p>Äänimaisema syntyy selaimessa. Se on nykyaikainen tulkinta, eikä käytä arkistoäänitteitä. Mahdolliselle aikakauden musiikille on oma paikka äänivalikossa.</p>
+        <label for="audio-mode">Äänisisältö</label>
+        <select id="audio-mode"><option value="ambience">Ympäristön äänet</option><option value="music" disabled>Aikakauden musiikki (tulossa)</option></select>
+        <p class="small">Musiikkiraita lisätään, kun sekä sävellyksen että äänitteen käyttöoikeudet on varmistettu.</p>
+      </details>
+    </aside>
+  </section>
+</main>
+<dialog id="discovery" aria-labelledby="discovery-title">
+  <div class="dialog-top"><p class="eyebrow" id="discovery-kind"></p><form method="dialog"><button class="outline" type="submit" aria-label="Sulje löytö">Sulje ×</button></form></div>
+  <h2 id="discovery-title"></h2>
+  <p id="discovery-body"></p>
+  <p id="discovery-source" hidden></p>
+</dialog>
+<p class="sr-only" role="status" id="status"></p>
+</body>
+</html>
