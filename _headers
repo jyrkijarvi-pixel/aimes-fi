@@ -5,3 +5,15 @@
 /*
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+
+# OSM street-map tiles need the origin in the Referer header.
+# Keep the existing privacy policy on legacy pages and APIs.
+/
+  ! Referrer-Policy
+  Referrer-Policy: strict-origin-when-cross-origin
+/index.html
+  ! Referrer-Policy
+  Referrer-Policy: strict-origin-when-cross-origin
+/time-jump/*
+  ! Referrer-Policy
+  Referrer-Policy: strict-origin-when-cross-origin
