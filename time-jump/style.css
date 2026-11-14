@@ -161,3 +161,56 @@ html { scrollbar-gutter: stable; }
 .source-filters select { color:var(--ink); background:#153438; border:1px solid #557f7c; padding:10px; min-width:0; width:100%; font:inherit; }
 .source-filters .fine { margin-top:5px; }
 .station .fine { display:block; }
+
+
+/* Historical gallery primary flow. Fits mobile without heavy image frameworks. */
+.search-year-choice { margin-top:14px; padding:11px 0 0; border-top:1px solid var(--line); }
+.search-year-choice input { width:100%; }
+.search-year-choice small { display:block; margin:7px 0 0; }
+.results .place-choice { display:grid; text-align:left; gap:4px; padding:13px 15px; border-color:#648c84; }
+.results .place-choice:hover { background:#1b4443; border-color:var(--mint); }
+.place-choice strong { font-size:1.08rem; color:var(--ink); }
+.place-choice .fine { display:block; line-height:1.3; }
+.place-action { font-size:.86rem; color:var(--mint); font-weight:750; margin-top:3px; }
+.explore-header-actions { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:14px; }
+.explore-year-form { min-width:210px; max-width:320px; }
+.explore-year-form label { font-size:.8rem; }
+.explore-year-form .search-row { flex-wrap:nowrap; }
+.explore-year-form .search-row input { max-width:115px; min-width:85px; flex:1; }
+.explore-year-form button { font-size:.8rem; }
+.gallery-overview { padding:clamp(18px,3vw,38px); }
+.gallery-topline { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:15px; }
+.gallery-overview h3 { font:500 clamp(1.7rem,2.7vw,2.6rem)/1.15 Georgia,serif; margin:5px 0 7px; }
+.gallery-total { white-space:nowrap; font:600 .89rem Consolas,monospace; background:#204440; padding:9px 12px; color:var(--mint); border:1px solid var(--line); }
+.gallery-overview > .fine { margin:8px 0 13px; }
+.gallery-overview > .gallery-footnote { margin-top:15px; }
+.gallery-overview .source-filters { grid-template-columns:repeat(2,minmax(0,1fr)); align-items:end; gap:12px; margin:0 0 15px; }
+.gallery-overview .source-filters .filter-message { grid-column:1/-1; margin:0; }
+.gallery-overview .source-filters label { display:block; }
+.gallery-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:12px; }
+.gallery-card { display:grid; grid-template-rows:145px minmax(78px,auto); gap:0; min-width:0; text-align:left; color:var(--ink); padding:0; background:#132b2e; border:1px solid #537270; transition:background .15s ease,border-color .15s ease; }
+.gallery-card:hover,.gallery-card[aria-pressed="true"] { background:#204441; border-color:var(--warm); }
+.gallery-card img { display:block; width:100%; height:145px; object-fit:cover; background:#0a191a; }
+.gallery-card-text { display:grid; gap:4px; padding:10px; min-width:0; }
+.gallery-card-text strong { font-size:.9rem; line-height:1.3; overflow-wrap:anywhere; }
+.gallery-card-text .fine,.gallery-card-text small { font-size:.74rem; color:var(--muted); }
+.selected-photo { border-top:1px solid var(--line); scroll-margin-top:15px; }
+.selected-photo .explore-stage { height:clamp(380px,60svh,760px); }
+.selected-photo #explore-photo-title:focus { outline-offset:5px; }
+#gallery-empty { padding:22px 0; }
+@media(max-width:900px){
+  .gallery-overview .source-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .explore-header-actions { align-items:stretch; flex-direction:column; }
+  .explore-year-form { max-width:none; }
+}
+@media(max-width:550px){
+  .gallery-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .gallery-card { grid-template-rows:115px auto; }
+  .gallery-card img { height:115px; }
+  .gallery-topline { align-items:flex-start; flex-direction:column; }
+  .gallery-overview .source-filters { grid-template-columns:1fr; }
+  .explore-year-form .search-row { flex-wrap:wrap; }
+  .explore-header-actions { width:100%; }
+  .explore-header-actions #explore-close { width:100%; }
+}
+@media(prefers-reduced-motion:reduce) { .gallery-card { transition:none; } }
