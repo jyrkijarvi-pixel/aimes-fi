@@ -41,6 +41,11 @@
       <form id="search">
         <label for="query">Paikka tai koordinaatit</label>
         <div class="search-row"><input id="query" required maxlength="140" placeholder="Esim. Tokio tai 35.68, 139.76" autocomplete="off"><button class="primary" type="submit">Hae</button></div>
+        <div class="search-year-choice">
+          <label for="search-year">Matkan vuosi <span class="fine">(valinnainen)</span></label>
+          <input id="search-year" type="number" min="-100000" max="100000" step="1" placeholder="Esim. 1962">
+          <small>Vuosi nostaa aikakauden aineistoa esiin, mutta muunkin ajan löydöt näkyvät.</small>
+        </div>
       </form>
       <p id="search-status" class="status" role="status"></p>
       <ul id="results" class="results"></ul>
@@ -69,7 +74,7 @@
         <div id="photo-controls" class="photo-controls" hidden>
           <button class="outline" id="prev" type="button" aria-label="Edellinen kuva">←</button><span id="photo-number" aria-live="polite"></span><button class="outline" id="next" type="button" aria-label="Seuraava kuva">→</button>
         </div>
-        <button class="primary explore-cta" id="enter-explorer" type="button">Astu tutkimaan tätä paikkaa →</button>
+        <button class="primary explore-cta" id="enter-explorer" type="button">Avaa kuvagalleria →</button>
         <a class="primary demo-link" id="demo" href="helsinki-1952/" hidden>Astu Helsinkiin 1952 ↗</a>
         <div id="reconstruction-option" class="reconstruction-option" hidden>
           <button class="outline reconstruction-toggle" id="reconstruction-toggle" type="button"
@@ -97,12 +102,56 @@
         <h2 id="explore-title"></h2>
         <p id="explore-era" class="explorer-era"></p>
       </div>
-      <button id="explore-close" class="outline" type="button">← Takaisin maailmankartalle</button>
+      <div class="explore-header-actions">
+        <form id="explore-year-form" class="explore-year-form">
+          <label for="explore-year">Vuosi (valinnainen)</label>
+          <div class="search-row">
+            <input id="explore-year" type="number" min="-100000" max="100000" step="1" placeholder="Kaikki vuodet">
+            <button type="submit" class="outline">Hae vuodelle</button>
+          </div>
+        </form>
+        <button id="explore-close" class="outline" type="button">← Takaisin maailmankartalle</button>
+      </div>
     </header>
     <div class="explorer-body">
       <div class="explorer-main">
+        <section class="gallery-overview" aria-labelledby="gallery-title">
+          <div class="gallery-topline">
+            <div>
+              <p class="eyebrow">TIME JUMP / HISTORIALLISET LÖYDÖT</p>
+              <h3 id="gallery-title">Kuvat ja kertomukset</h3>
+              <p class="fine">Tutki paikan ja aikakauden aineistoja. Valitse kuva avataksesi sen suureksi.</p>
+            </div>
+            <p class="gallery-total" id="gallery-count" role="status">Etsitään aineistoa…</p>
+          </div>
+          <div class="source-filters">
+            <div><label for="source-category">Aihe</label>
+              <select id="source-category">
+                <option value="all">Kaikki aineistot</option>
+                <option value="places">Kadut, rakennukset ja maisemat</option>
+                <option value="people">Ihmiset ja muotokuvat</option>
+                <option value="interior">Sisäkuvat ja arki</option>
+                <option value="memory">Hautakivet ja muistomerkit</option>
+                <option value="maps">Kartat ja piirrokset</option>
+                <option value="other">Muut löydöt</option>
+              </select></div>
+            <div><label for="source-time">Aikakausi</label>
+              <select id="source-time">
+                <option value="all">Kaikki vuodet</option>
+                <option value="exact">Vain valittu vuosi</option>
+                <option value="near">± 10 vuotta</option>
+                <option value="unknown">Vuosi tuntematon</option>
+              </select></div>
+            <p class="fine filter-message" id="source-filter-status" role="status"></p>
+          </div>
+          <p class="fine">Löydöt eivät välttämättä ole valitulta vuodelta. Paikkayhteys voi perustua otsikkoon tai sijaintitietoon.</p>
+          <div class="gallery-grid" id="gallery-grid" aria-label="Historiallisen aineiston kuvagalleria"></div>
+          <p id="gallery-empty" class="fine" hidden>Ei osumia tällä rajauksella. Vaihda aihetta tai aikakautta.</p>
+          <p class="fine gallery-footnote">Näytetään enintään 24 ensimmäisen hakuerän löytöä Wikimedia Commonsista. Kaikkien arkistojen kuvat eivät kuulu tähän hakuun.</p>
+        </section>
+        <section class="selected-photo" id="selected-photo" aria-labelledby="explore-photo-title">
         <div id="explore-stage" class="explore-stage" tabindex="0" aria-label="Tutki kuvaa. Voit suurentaa kuvaa ja siirtää suurennettua kuvaa hiirellä.">
-          <div class="stage-label" id="explore-authenticity">AITO LÄHDEKUVA · EI 3D-REKONSTRUKTIO</div>
+          <div class="stage-label" id="explore-authenticity">LÄHDEAINEISTO · EI 3D-REKONSTRUKTIO</div>
           <img id="explore-image" alt="" draggable="false" hidden>
           <p id="explore-empty" class="explore-empty" hidden>Ei varmennettua kuvaa tästä paikasta ja ajasta. Karttaa ja lähikohteita voi silti tutkia.</p>
           <div class="stage-counter" id="explore-counter"></div>
@@ -117,12 +166,13 @@
           <p id="explore-photo-detail" class="status"></p>
           <div id="explore-credit" class="explore-credit"></div>
           <div class="stage-actions">
-            <button class="outline" id="explore-prev" type="button">← Edellinen kuvauspiste</button>
-            <button class="outline" id="explore-next" type="button">Seuraava kuvauspiste →</button>
+            <button class="outline" id="explore-prev" type="button">← Edellinen löytö</button>
+            <button class="outline" id="explore-next" type="button">Seuraava löytö →</button>
           </div>
-          <p class="fine">Voit tutkia löytynyttä valokuvaa suurentamalla ja liikuttamalla sitä. Eri kuvauspisteet ovat todellisia erillisiä kuvia, eivät keinotekoisesti tehtyä käveltävää 3D-maailmaa. Kartan kohteet kuvaavat nykyistä maantiedettä.</p>
+          <p class="fine">Voit tutkia löytynyttä valokuvaa suurentamalla ja liikuttamalla sitä. Kuvat ja muut lähdeaineistot ovat erillisiä dokumentteja, eivät keinotekoisesti tehtyä 3D-maailmaa. Osa löydöistä liittyy paikkaan vain nimensä perusteella; niiden sijainti ei ole varmistettu. Kartan kohteet kuvaavat nykyistä maantiedettä.</p>
           <a id="explore-demo" class="primary demo-link" href="helsinki-1952/" hidden>Astu Helsinki 1952 -rekonstruktioon ↗</a>
         </div>
+        </section>
       </div>
       <aside class="explorer-sidebar">
         <section class="side-section">
@@ -133,7 +183,7 @@
           <p class="fine">Katukartta tarvitsee verkkoyhteyden eikä esitä valittua historiallista vuotta.</p>
         </section>
         <section class="side-section">
-          <h3>Kuvauspisteet <span id="explore-stations-count"></span></h3>
+          <h3>Löytöjen luettelo <span id="explore-stations-count"></span></h3>
           <div id="explore-stations" class="station-list"></div>
         </section>
         <section class="side-section">

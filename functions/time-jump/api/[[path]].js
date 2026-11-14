@@ -169,7 +169,17 @@ function plain(value) {
   }).replace(/\s+/g, ' ').trim();
 }
 
-function photo(page, point, radius) {
+function mediaCategory(context) {
+  // Categories guide presentation only: nothing is excluded for being a grave, portrait or interior.
+  const words = fold(context);
+  if (/\b(gravestone|tombstone|grave|cemetery|cemeteries|memorial|hauta|hautaus|muistomerkki|headstone)\b/.test(words)) return 'memory';
+  if (/\b(map|maps|kartta|kartat|atlas|plans|plan of|city plan)\b/.test(words)) return 'maps';
+  if (/\b(interior|interiors|indoor|inside|kitchen|classroom|living room|interieur|sisakuva|sisatilat|keittio|olohuone)\b/.test(words)) return 'interior';
+  if (/\b(portrait|portraits|people|person|people of|family|families|muotokuva|perhe|henkilo|henkilot)\b/.test(words)) return 'people';
+  if (/\b(street|streets|buildings|building|architecture|roads|road|town|village|church|school|market|kauppa|koulu|raitti|keskusta|katu|kirkko|kyla|ilmakuva|aerial|landscape|maisema)\b/.test(words)) return 'places';
+  return 'other';
+}
+function photo(page, point, radius, named = false) {
   const info = page.imageinfo?.[0];
   if (!info || !/^image\/(jpeg|png|webp)$/.test(info.mime)) return null;
   const meta = key => plain(info.extmetadata?.[key]?.value);
@@ -179,25 +189,38 @@ function photo(page, point, radius) {
   const dates = meta('DateTimeOriginal');
   const categories = meta('Categories');
   const title = page.title.replace(/^File:/, '').replace(/\.[^.]+$/, '');
-  const context = [title, categories, meta('ImageDescription')].join(' ');
-  if (!/^(CC BY(?:-SA)?\b|CC0\b|Public domain\b|PDM\b)/i.test(license) || !artist) return null;
-  if (/\b(map|locator map|illustration|rendering|logo|screenshot|diagram|coat of arms|flag|AI-generated|collage)\b/i.test(title) ||
-      /AI-generated|AI generated|generated with (AI|Midjourney|DALL)|Photomontages|Photographs of maps|Screenshots of/i.test(categories)) return null;
-  if (!dates && !/photograph|photos?|Unsplash|Flickr/i.test(context)) return null;
-  const points = (page.coordinates || []).filter(c => c.globe === 'earth');
-  const metres = Math.min(...points.map(c => distance(point, { lat: c.lat, lon: c.lon })));
-  if (!(metres <= radius)) return null;
+  const description = meta('ImageDescription');
+  const context = [title, categories, description].join(' ');
+  if (!/^(CC BY(?:-SA)?\b|CC0\b|Public domain\b|PDM\b)/i.test(license)) return null;
+  if (!artist && /^(CC BY(?:-SA)?\b)/i.test(license)) return null;
+  if (/AI.generated|generated with (AI|Midjourney|DALL)|Photomontages created by AI/i.test(context)) return null;
+  const points = (page.coordinates || []).filter(c => c.globe === 'earth' && Number.isFinite(c.lat) && Number.isFinite(c.lon));
+  const nearest = points.reduce((best, candidate) => {
+    const metres = distance(point, { lat:candidate.lat, lon:candidate.lon });
+    return !best || metres < best.metres ? { lat:candidate.lat, lon:candidate.lon, metres } : best;
+  }, null);
+  // A title containing the place name is a useful lead, not verified geographic evidence.
+  const localName = fold(point.name).replace(/\s*,.*/, '');
+  const titleNamesPlace = localName.length >= 4 && fold(title).includes(localName);
+  if (named && !titleNamesPlace) return null;
+  if (!named && (!nearest || nearest.metres > radius)) return null;
   const src = info.thumburl || info.url;
   if (!/^https:\/\/(?:upload|thumb)\.wikimedia\.org\//.test(src) || !/^https:\/\/commons\.wikimedia\.org\//.test(info.descriptionurl)) return null;
-  const years = [...new Set(dates.match(/\b(?:18|19|20)\d{2}\b/g) || [])];
+  const years = [...new Set((dates.match(/\b(?:18|19|20)\d{2}\b/g) || []))];
   const exactYear = years.length === 1 && !/circa|\bc\.\s|between|before|after|unknown|or |vers|\?|\bca\./i.test(dates) ? Number(years[0]) : null;
-  const nearest = points.reduce((best, candidate) => {
-    const d = distance(point, { lat:candidate.lat, lon:candidate.lon });
-    return !best || d < best.metres ? { lat:candidate.lat, lon:candidate.lon, metres:d } : best;
-  }, null);
-  return { title, artist: artist.slice(0, 300), license, licenseUrl: /^https:\/\//.test(licenseUrl) ? licenseUrl : '', src, url: info.descriptionurl,
-    date: dates.slice(0, 95), year: exactYear, distance: Math.round(metres),
-    lat: nearest?.lat, lon: nearest?.lon, locationApprox: false, restrictions: meta('Restrictions').slice(0, 150) };
+  const category = mediaCategory(context);
+  const isIllustration = /\b(drawing|illustration|painting|sketch|engraving|piirros|maalaus|kaiverrus)\b/i.test(context);
+  const kind = category === 'maps' ? 'Kartta' : isIllustration ? 'Piirros tai kuvitus' : 'Kuva-aineisto';
+  const evidence = nearest && nearest.metres <= radius ? 'coordinates' : 'title';
+  return {
+    title, artist: (artist || 'Tekijää ei ilmoitettu').slice(0, 300), license,
+    licenseUrl: /^https:\/\//.test(licenseUrl) ? licenseUrl : '',
+    src, url: info.descriptionurl, date:dates.slice(0, 95), year:exactYear,
+    distance:nearest ? Math.round(nearest.metres) : null,
+    lat: evidence === 'coordinates' ? nearest?.lat : null, lon: evidence === 'coordinates' ? nearest?.lon : null,
+    locationApprox:false, locationEvidence:evidence, category, kind,
+    restrictions:meta('Restrictions').slice(0, 150)
+  };
 }
 
 const helsinki = { lat: 60.174, lon: 24.934 };
@@ -205,20 +228,53 @@ const archive = {
   title: 'Helsingin olympialaisten avajaiset Olympiastadionilla', artist: 'Olympia-kuva Oy / Helsingin kaupunginmuseo',
   src: 'data/helsinki-1952-archive.jpg', url: 'https://commons.wikimedia.org/wiki/File:Helsingin_olympialaiset_1952_-_XLVIII-276_-_hkm.HKMS000005-km0000mrdm.jpg',
   original: 'https://www.finna.fi/Record/hkm.HKMS000005:km0000mrdm', license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-  date: '19.7.1952', year: 1952, lat:60.187, lon:24.927, locationApprox:true, distance:1500
+  date: '19.7.1952', year: 1952, lat:60.187, lon:24.927, locationApprox:true, distance:1500, category:'people', kind:'Valokuva', locationEvidence:'coordinates'
 };
 
 async function pictures(point) {
   const radius = point.kind === 'country' ? 2500 : 5000;
   if (Math.abs(point.lat) >= 89.99) return [];
   const host = 'commons.wikimedia.org';
-  const historical = point.year >= 1839 && point.year <= new Date().getFullYear();
-  const parameters = historical
-    ? { generator: 'search', gsrnamespace: 6, gsrlimit: 25, gsrsearch: `nearcoord:5km,${point.lat},${point.lon} ${point.year} filetype:bitmap` }
-    : { ...geo(point, radius, 22, 6), ggsprimary: 'all' };
-  const pages = await wiki(host, { ...parameters, ...mediaProps });
-  return pages.map(page => photo(page, point, radius)).filter(item => item && (point.year === null || item.year === point.year))
-    .sort((a,b) => a.distance - b.distance).slice(0, 6);
+  const requests = [
+    // All dates and categories: historical dates must not erase other valuable source material.
+    wiki(host, { ...geo(point, radius, 48, 6), ggsprimary:'all', ...mediaProps })
+  ];
+  // Also look for source files whose titles mention the place, even if they lack geo tags.
+  const placeName = (point.name || '').split(',')[0].trim();
+  if (point.kind !== 'country' && placeName.length >= 4 && placeName.length <= 45
+      && !/[^\p{L}\p{N}\s\-']/u.test(placeName)) {
+    requests.push(wiki(host, {
+      generator:'search', gsrnamespace:6, gsrlimit:30,
+      gsrsearch:'intitle:"' + placeName + '" filetype:bitmap',
+      ...mediaProps
+    }));
+  }
+  const settled = await Promise.allSettled(requests);
+  if (settled.every(r => r.status === 'rejected')) throw new Error('Wikimedia Commons ei vastannut.');
+  const imageBySource = new Map();
+  settled.forEach((result, sourceIndex) => {
+    if (result.status !== 'fulfilled') return;
+    for (const page of result.value) {
+      const image = photo(page, point, radius, sourceIndex > 0);
+      if (!image) continue;
+      const previous = imageBySource.get(image.url);
+      // Prefer verified coordinates if another search found the same photo without them.
+      if (!previous || (previous.locationEvidence !== 'coordinates' && image.locationEvidence === 'coordinates')) {
+        imageBySource.set(image.url, image);
+      }
+    }
+  });
+  const selectedYear = point.year;
+  const score = image => {
+    const yearGap = selectedYear == null || image.year == null ? null : Math.abs(selectedYear - image.year);
+    const period = yearGap === 0 ? 320 : yearGap !== null && yearGap <= 10 ? 175 : yearGap !== null && yearGap <= 30 ? 95 : 0;
+    const placeConfidence = image.locationEvidence === 'coordinates' ? 90 : 60;
+    const distanceBonus = Number.isFinite(image.distance) ? Math.max(0, 40 - image.distance / 200) : 0;
+    return period + placeConfidence + distanceBonus;
+  };
+  return [...imageBySource.values()]
+    .sort((a,b) => score(b)-score(a) || (a.distance ?? Infinity)-(b.distance ?? Infinity) || a.title.localeCompare(b.title))
+    .slice(0, 24);
 }
 
 async function place(point) {
@@ -226,11 +282,11 @@ async function place(point) {
   const key = JSON.stringify(point);
   const [wikiResult, commonsResult] = await Promise.allSettled([
     cached(`wiki:${JSON.stringify({ ...point, year: null })}`, () => articles(point)),
-    point.year !== null && (point.year < 1839 || point.year > new Date().getFullYear()) ? Promise.resolve([]) : cached(`media:${key}`, () => pictures(point))
+    cached(`media:${key}`, () => pictures(point))
   ]);
   const photos = commonsResult.value || [];
   return {
-    demo, photos: demo ? [archive, ...photos.filter(image => image.url !== archive.url)].slice(0, 6) : photos,
+    demo, photos: demo ? [archive, ...photos.filter(image => image.url !== archive.url)].slice(0, 24) : photos,
     wiki: wikiResult.value || { main: null, nearby: [] }, availability: { wiki: wikiResult.status === 'fulfilled', photos: commonsResult.status === 'fulfilled' }
   };
 }
