@@ -13,6 +13,11 @@
 <main>
 <section class="stage" aria-label="Kauppatorin aikamatka">
   <canvas id="view" tabindex="0" aria-label="Kauppatorin 3D-näkymä" aria-describedby="controls"></canvas>
+  <div class="archive-layer" id="archive-layer" hidden>
+    <img src="kolera-allas.webp" alt="Arvo Kajantien arkistokuva Kolera-altaalta samasta arvioidusta katselusuunnasta.">
+    <span class="archive-label">Arkistokuva · 1950–1959</span>
+    <span class="model-label">3D-rekonstruktio</span>
+  </div>
   <div id="arrival" class="arrival">
     <div>
       <p class="eyebrow">HELSINKI · KESÄ 1952</p>
@@ -27,6 +32,7 @@
   <div class="overlay" id="overlay" hidden>
     <div class="hud"><p class="eyebrow">KAUPPATORI · HELSINKI 1952</p><strong>Kokeellinen rekonstruktio</strong></div>
     <div class="view-controls">
+      <button id="compare" type="button" aria-pressed="false" aria-controls="comparison-tools">Vertaa arkistokuvaan</button>
       <label>Grafiikka <select id="quality"><option value="full">Tarkka</option><option value="light">Kevyt</option></select></label>
       <button id="reset" type="button">Lähtöpiste</button>
     </div>
@@ -38,20 +44,30 @@
     </div>
   </div>
 </section>
+<div id="comparison-tools" class="comparison-tools" hidden>
+  <label for="archive-share">Arkistokuvan osuus</label>
+  <input type="range" id="archive-share" min="0" max="100" value="50">
+  <button type="button" id="resume">Palaa kävelyyn</button>
+  <p>Vertailu käyttää arkistokuvasta arvioitua kamerakulmaa. Julkisivut kohdistuvat, veneet ja rantareuna ovat sovituksia.</p>
+</div>
 <p class="controls" id="controls">Liiku WASD-näppäimillä. Käännä katsetta nuolilla tai vetämällä kuvaa. Kosketusnäytöllä käytä liikkumispainikkeita ja pyyhkäise kuvaa.</p>
 <section id="lahteet" class="sources" aria-labelledby="source-title">
   <div>
     <p class="eyebrow">LÄHTEET JA TULKINTA</p>
     <h2 id="source-title">Torin laidalla</h2>
     <p>Arvo Kajantien värikuva näyttää Kolera-altaan veneet ja torikojut sekä Kaupungintalon ja Pohjoisesplanadin rakennusrivin. Museo ajoittaa kuvan vuosiin 1950–1959.</p>
+    <p>3D-näkymän julkisivut ovat värikuvasta rajattuja pintoja. Börje Dilénin vuonna 1952 ottama valokuva näyttää Kaupungintalon koristeet ja sisäänkäynnin toisesta suunnasta. Syvyys ja kameran paikka on arvioitu.</p>
     <p>Vuoden 1952 matkailijakartasta tarkistin torin, rantareunan ja Kaupungintalon korttelin suhteen. Julkisivut on tulkittu myös valokuvan ja kaupungin historiatietojen pohjalta. Mittasuhteet, veneiden paikat, toritavarat, ajoneuvo, henkilöt, värit ja valaistus ovat havainnollistavia valintoja.</p>
     <ul>
       <li><a href="https://hkm.finna.fi/Record/hkm.87455276-66CB-47DF-98AF-DF2A3EA7C062">Kolera-allas, Kauppatori · Finna</a></li>
       <li><a href="https://historia.hel.fi/fi/ilmiot/vallankayttoa-ja-hallintoa/kaupungintalo">Kaupungintalon historia · Helsingin kaupunki</a></li>
+      <li><a href="https://www.finna.fi/Record/hkm.429E061A-83E3-4F8C-AFE2-AACC8CA07B86">Kaupungintalo 1952 · Finna</a></li>
+      <li><a href="https://polyhaven.com/a/cobblestone_floor_05">Kiveyksen materiaali · Rob Tuytel / Poly Haven · CC0</a></li>
       <li><a href="https://historia.hel.fi/fi/alueet/etelainen/esplanadit-ja-kauppatori-kaupungin-sykkiva-sydan">Esplanadit ja Kauppatori · Helsingin kaupunki</a></li>
       <li><a href="https://avoindata.suomi.fi/data/dataset/helsingin-historialliset-opaskartat">Helsingin matkailijakartta 1952 · Avoindata.fi</a></li>
     </ul>
     <details><summary>Näytä karttaote vuodelta 1952</summary><figure><img src="opaskartta-1952.webp" width="1000" height="900" loading="lazy" alt="Vuoden 1952 karttaote Kauppatorin, Eteläsataman ja Senaatintorin ympäristöstä."><figcaption>Rajattu ote · Helsingin historialliset opaskartat / Helsingin kaupunginkanslia · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></figcaption></figure></details>
+    <details><summary>Näytä Kaupungintalo vuonna 1952</summary><figure><img src="kaupungintalo-1952.webp" width="1186" height="1200" loading="lazy" alt="Kaupungintalon julkisivu, pylväskatos ja Kauppatorin kiveys vuonna 1952."><figcaption>Börje Dilén / Helsingin kaupunginmuseo · 1952 · <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark</a></figcaption></figure></details>
   </div>
   <figure><img src="kolera-allas.webp" width="1200" height="793" loading="lazy" alt="Kolera-altaan puisia veneitä ja Kauppatorin kojuja. Kaupungintalo näkyy taustalla."><figcaption>Aito arkistokuva · Arvo Kajantie / Helsingin kaupunginmuseo · 1950–1959 · <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark</a></figcaption></figure>
 </section>

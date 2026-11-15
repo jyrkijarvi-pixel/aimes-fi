@@ -1,5 +1,6 @@
 import * as T from './vendor/three.module.min.js';
 import { buildMarket } from './market.js';
+import { archiveSize, reference } from './archive.js';
 
 const canvas=document.querySelector('#view');
 const enter=document.querySelector('#enter');
@@ -7,9 +8,15 @@ const arrival=document.querySelector('#arrival');
 const overlay=document.querySelector('#overlay');
 const status=document.querySelector('#status');
 const quality=document.querySelector('#quality');
+const compare=document.querySelector('#compare');
+const archive=document.querySelector('#archive-layer');
+const comparisonTools=document.querySelector('#comparison-tools');
+const archiveShare=document.querySelector('#archive-share');
+const resume=document.querySelector('#resume');
+const stage=canvas.closest('.stage');
 const scene=new T.Scene();
-const camera=new T.PerspectiveCamera(67,1,.08,180);
-const start={x:-14.9,z:14.1,yaw:.31,pitch:.045};
+const camera=new T.PerspectiveCamera(reference.fov,1,.08,180);
+const start=reference;
 const pose={...start};
 const keys=new Set();
 const heldPointers=new Map();
@@ -18,11 +25,13 @@ let active=false;
 let frame=0, previous=0;
 let dirty=true;
 let drag=null;
+let comparing=false;
 
 function fail(message) {
   active=false;
   cancelAnimationFrame(frame);
   enter.disabled=true;
+  setComparison(false);
   overlay.hidden=true;
   arrival.hidden=false;
   status.textContent=message;
@@ -36,13 +45,14 @@ function size() {
   renderer.setSize(rect.width,rect.height,false);
   renderer.shadowMap.enabled=!light;
   renderer.shadowMap.needsUpdate=true;
-  camera.aspect=rect.width/rect.height;
+  camera.aspect=comparing ? archiveSize.width/archiveSize.height : rect.width/rect.height;
+  camera.fov=comparing ? reference.fov : camera.aspect<.85 ? 69 : reference.fov;
   camera.updateProjectionMatrix();
   dirty=true;
 }
 function walkable(x,z) {
   if(x< -42||x>37||z< -21||z>19) return false;
-  if(z>4.24 && x> -11.18) return false;
+  if(z> -3.7 && x> -11.18) return false;
   if(Math.abs(x-14)<1.05 && Math.abs(z+12)<1.05) return false;
   for(let i=0;i<11;i++) {
     if(i!==6 && Math.abs(x-(-24+i*5.9))<2.11 && Math.abs(z-(-8+(i%2)*.28))<1.55) return false;
@@ -54,6 +64,7 @@ function pressed(key) {
   return keys.has(key)||[...heldPointers.values()].includes(key);
 }
 function update(dt) {
+  if(comparing)return;
   const x=Number(pressed('d'))-Number(pressed('a'));
   const z=Number(pressed('w'))-Number(pressed('s'));
   const turn=Number(pressed('ArrowRight'))-Number(pressed('ArrowLeft'));
@@ -69,8 +80,9 @@ function update(dt) {
   dirty=true;
 }
 function render() {
-  camera.position.set(pose.x,1.66,pose.z);
-  camera.rotation.set(pose.pitch,-pose.yaw,0,'YXZ');
+  const view=comparing ? reference : pose;
+  camera.position.set(view.x,view.height,view.z);
+  camera.rotation.set(view.pitch,-view.yaw,0,'YXZ');
   renderer.render(scene,camera);
   dirty=false;
 }
@@ -88,20 +100,32 @@ function clearInputs() {
   drag=null;
   previous=0;
 }
-function setup() {
+function setComparison(value) {
+  comparing=value;
+  clearInputs();
+  stage.classList.toggle('is-comparing',value);
+  archive.hidden=!value;
+  comparisonTools.hidden=!value;
+  compare.setAttribute('aria-pressed',String(value));
+  size();
+}
+async function setup() {
   quality.value=matchMedia('(pointer:coarse)').matches||navigator.hardwareConcurrency<=4?'light':'full';
   try {
     renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,failIfMajorPerformanceCaveat:false});
     renderer.toneMapping=T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.03;
+    renderer.toneMappingExposure=1.12;
     renderer.shadowMap.type=T.PCFShadowMap;
     renderer.shadowMap.autoUpdate=false;
-    buildMarket(scene);
+    const loader=new T.TextureLoader();
+    const [photo,color,normal]=await Promise.all(['kolera-allas.webp','graniitti-vari.jpg','graniitti-normaali.jpg'].map(path=>loader.loadAsync(path)));
+    photo.colorSpace=color.colorSpace=T.SRGBColorSpace;
+    buildMarket(scene,{archive:photo,color,normal});
     size();
     render();
   } catch (error) {
     console.warn('Kauppatorin 3D-näkymää ei voitu avata.',error);
-    fail('3D-näkymä tarvitsee toimivan WebGL 2 -tuen. Arkistokuva ja lähteet löytyvät alta.');
+    fail('3D-näkymää ei saatu ladattua. Se tarvitsee WebGL 2 -tuen ja paikalliset kuvatiedostot. Arkistokuva ja lähteet löytyvät alta.');
     return;
   }
   new ResizeObserver(size).observe(canvas);
@@ -124,6 +148,17 @@ canvas.addEventListener('webglcontextlost',event=>{
   fail('3D-yhteys katkesi. Voit yrittää uudelleen päivittämällä sivun.');
 });
 quality.addEventListener('change',()=>{size();canvas.focus({preventScroll:true});});
+compare.addEventListener('click',()=>{
+  setComparison(true);
+  archiveShare.focus({preventScroll:true});
+  comparisonTools.scrollIntoView({block:'nearest'});
+});
+archiveShare.addEventListener('input',()=>archive.style.setProperty('--archive-share',archiveShare.value+'%'));
+resume.addEventListener('click',()=>{
+  setComparison(false);
+  canvas.focus({preventScroll:true});
+  window.scrollTo(0,0);
+});
 document.querySelector('#reset').addEventListener('click',()=>{
   Object.assign(pose,start);
   dirty=true;
@@ -139,7 +174,7 @@ canvas.addEventListener('blur',()=>keys.clear());
 window.addEventListener('blur',clearInputs);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInputs();});
 canvas.addEventListener('pointerdown',event=>{
-  if(!active||drag||event.button!==0)return;
+  if(!active||comparing||drag||event.button!==0)return;
   canvas.focus({preventScroll:true});
   canvas.setPointerCapture(event.pointerId);
   drag={id:event.pointerId,x:event.clientX,y:event.clientY};
