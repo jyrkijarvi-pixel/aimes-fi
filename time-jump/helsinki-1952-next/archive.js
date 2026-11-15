@@ -3,7 +3,7 @@ import * as T from './vendor/three.module.min.js';
 // The color photograph frames the projection. The distances are estimates
 // from the basin layout, not measured camera or building survey data.
 export const archiveSize={width:1200,height:793};
-export const reference={x:-12.7,z:15.5,yaw:.52,pitch:-.161,height:1.66,fov:54};
+export const reference={x:-11.65,z:15.5,yaw:.52,pitch:-.161,height:1.66,fov:54};
 
 // Silhouettes traced against Kajantie's photograph, in source image pixels.
 // Crop above the market crowd so people and cars do not become wall textures.

@@ -4,6 +4,7 @@ import { archiveArchitecture } from './archive.js';
 const v = (x,y,z) => new T.Vector3(x,y,z);
 const material = color => new T.MeshStandardMaterial({color,roughness:.82});
 const stone=material(0x77726a), trim=material(0xc4b8a2), glass=material(0x314649);
+const quay=material(0x777871);
 const wood=material(0x75543b), dark=material(0x372b24), metal=material(0x333e39);
 
 const boxGeometry=new T.BoxGeometry();
@@ -57,7 +58,7 @@ function floor(scene,w,d,x,z,materials) {
     tile.anisotropy=8;
     tile.needsUpdate=true;
   }
-  const mat=new T.MeshStandardMaterial({map,normalMap,normalScale:new T.Vector2(.64,.64),roughness:.91,color:0xa9a6a0});
+  const mat=new T.MeshStandardMaterial({map,normalMap,normalScale:new T.Vector2(.53,.53),roughness:.91,color:0xbcc5cb});
   const item=mesh(scene,new T.PlaneGeometry(w,d),mat,x,.035,z);
   item.rotation.x=-Math.PI/2;item.castShadow=false;
 }
@@ -120,7 +121,7 @@ function water(scene) {
   geometry.computeVertexNormals();
   const map=texture(ctx=>{
     ctx.fillStyle='#526d75';ctx.fillRect(0,0,512,512);
-    ctx.globalAlpha=.3;
+    ctx.globalAlpha=.21;
     for(let i=0;i<2900;i++){
       ctx.strokeStyle=random()>.52?'#b6cbca':'#233c48';
       const x=random()*512,y=random()*512;
@@ -192,8 +193,8 @@ export function buildMarket(scene,materials) {
   box(scene,stone,-35,-.48,9,49,1,24);
   floor(scene,190,46,36,-26,materials);
   floor(scene,49,24,-35,9,materials);
-  for(let x=-59;x<=122;x+=1.13)box(scene,trim,x,.042,-3.12,1.1,.10,.47);
-  for(let z=-3;z<=21;z+=1.13)box(scene,trim,-10.63,.042,z,.47,.10,1.1);
+  for(let x=-59;x<=122;x+=1.13)box(scene,quay,x,.042,-3.12,1.1,.10,.47);
+  for(let z=-3;z<=21;z+=1.13)box(scene,quay,-10.63,.042,z,.47,.10,1.1);
   for(const x of [-9,-1,9,19,31])cylinder(scene,metal,x,.16,-3.67,.12,.19,.34,12);
   archiveArchitecture(scene,materials.archive);
     box(scene,stone,14,.23,-12,1.7,.45,1.7);

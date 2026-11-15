@@ -16,7 +16,8 @@ const resume=document.querySelector('#resume');
 const stage=canvas.closest('.stage');
 const scene=new T.Scene();
 const camera=new T.PerspectiveCamera(reference.fov,1,.08,180);
-const start=reference;
+const narrow=matchMedia('(max-width:720px)');
+const start={...reference,yaw:narrow.matches ? .35 : .47};
 const pose={...start};
 const keys=new Set();
 const heldPointers=new Map();
@@ -46,7 +47,8 @@ function size() {
   renderer.shadowMap.enabled=!light;
   renderer.shadowMap.needsUpdate=true;
   camera.aspect=comparing ? archiveSize.width/archiveSize.height : rect.width/rect.height;
-  camera.fov=comparing ? reference.fov : camera.aspect<.85 ? 69 : reference.fov;
+  const horizontalLimit=2*Math.atan(Math.tan(T.MathUtils.degToRad(reference.fov)/2)*1.42/camera.aspect);
+  camera.fov=comparing ? reference.fov : Math.min(narrow.matches ? 69 : reference.fov,T.MathUtils.radToDeg(horizontalLimit));
   camera.updateProjectionMatrix();
   dirty=true;
 }
