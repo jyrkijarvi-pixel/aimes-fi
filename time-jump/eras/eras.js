@@ -151,6 +151,22 @@ async function loadPlace(selected, keepFilters = false) {
     if(!signal.aborted)setStatus('failed');
   }
 }
+async function changeWiki() {
+  const selected = place;
+  const signal = start();
+  byId('wiki').replaceChildren(text('p',t('searching')));
+  try {
+    const wiki = await api('era-wiki',{lat:selected.lat,lon:selected.lon,name:selected.name,article:selected.article||'',lang:language},signal);
+    if(signal.aborted)return;
+    data.wiki=wiki;
+    data.availability.wiki=true;
+  } catch {
+    if(signal.aborted)return;
+    data.wiki={main:null,nearby:[]};
+    data.availability.wiki=false;
+  }
+  renderWiki();
+}
 byId('search').addEventListener('submit',async event=>{
   event.preventDefault();
   const signal=start();
@@ -182,7 +198,12 @@ byId('language').addEventListener('click',()=>{
   url.searchParams.set('lang',language);
   history.replaceState(null,'',url);
   setLanguage();
-  if(place)loadPlace(place,true);
+  if (place && !byId('destination').hidden && data) {
+    renderFilters();
+    renderPhotos();
+    setStatus(!data.availability.photos?'photoFailed':data.diagnostics.succeeded<data.diagnostics.commonsBatches?'partial':'');
+    changeWiki();
+  } else if (place) loadPlace(place,true);
 });
 decade.addEventListener('change',()=>{
   precision.value='all';

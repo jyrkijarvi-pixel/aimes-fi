@@ -200,7 +200,7 @@ function mediaCategory(context) {
   if (/\b(street|streets|buildings|building|architecture|roads|road|town|village|church|school|market|kauppa|koulu|raitti|keskusta|katu|kirkko|kyla|ilmakuva|aerial|landscape|maisema)\b/.test(words)) return 'places';
   return 'other';
 }
-function photo(page, point, radius, named = false, eras = false) {
+function photo(page, point, radius, named = false, eras = false, photographTemplate = false) {
   const info = page.imageinfo?.[0];
   if (!info || (!/^image\/(jpeg|png|webp)$/.test(info.mime) &&
       !(eras && info.mime === 'image/tiff' && /\.jpe?g(?:\?|$)/i.test(info.thumburl || '')))) return null;
@@ -208,7 +208,8 @@ function photo(page, point, radius, named = false, eras = false) {
   const license = meta('LicenseShortName');
   const licenseUrl = meta('LicenseUrl');
   const artist = meta('Artist');
-  const dates = meta('DateTimeOriginal');
+  const dateMetadata = String(info.extmetadata?.DateTimeOriginal?.value || '');
+  const dates = eras ? plain(dateMetadata.replace(/<div\b[^>]*>\s*date QS:[\s\S]*?<\/div>/gi, '')) : meta('DateTimeOriginal');
   const categories = meta('Categories');
   const title = page.title.replace(/^File:/, '').replace(/\.[^.]+$/, '');
   const description = meta('ImageDescription');
@@ -235,7 +236,7 @@ function photo(page, point, radius, named = false, eras = false) {
   const isIllustration = /\b(drawing|illustration|painting|sketch|engraving|piirros|maalaus|kaiverrus)\b/i.test(context);
   if (eras && (category === 'maps' || isIllustration ||
       /\b(flag|logo|coat of arms|icon|screenshot|diagram|postage stamp|book cover|poster)\b/i.test(title) ||
-      !/photograph|\bphotos?\b|valokuva|negatiiv|flickr|daguerreotype|albumen/i.test(context))) return null;
+      !(photographTemplate || /photograph|\bphotos?\b|valokuva|negatiiv|flickr|daguerreotype|albumen/i.test(context)))) return null;
   const kind = category === 'maps' ? 'Kartta' : isIllustration ? 'Piirros tai kuvitus' : 'Kuva-aineisto';
   const evidence = nearest && nearest.metres <= radius ? 'coordinates' : 'title';
   return {
@@ -291,7 +292,7 @@ async function pictures(point, eras = false) {
   settled.forEach((result, sourceIndex) => {
     if (result.status !== 'fulfilled') return;
     for (const page of result.value) {
-      const image = photo(page, point, radius, sourceIndex > 0, eras);
+      const image = photo(page, point, radius, sourceIndex > 0, eras, eras && sourceIndex === 2);
       if (!image) continue;
       const previous = imageBySource.get(image.url);
       // Prefer verified coordinates if another search found the same photo without them.
@@ -349,7 +350,7 @@ async function eras(point, language) {
   const started = Date.now();
   const [history, wikiData] = await Promise.allSettled([
     cached(`era-media:${key}`, () => pictures(point, true)),
-    cached(`era-wiki:${language}:${key}`, () => articles(point, language))
+    eraWiki(point, language)
   ]);
   const media = [...history.value?.photos || []];
   if (distance(point, helsinki) <= 3000 && /^(helsinki|helsingfors)$/i.test(point.name)) {
@@ -385,6 +386,11 @@ async function eras(point, language) {
   };
 }
 
+function eraWiki(point, language) {
+  const { alias, ...wikiPoint } = point;
+  return cached(`era-wiki:${language}:${JSON.stringify(wikiPoint)}`, () => articles(wikiPoint, language));
+}
+
 
 
 const apiHeaders = {
@@ -417,10 +423,12 @@ export async function onRequest(ctx) {
       if(country && !/^[A-Z]{2}$/.test(country))return respond({error:'Virheellinen maatunnus.'},400);
       return respond(await search(q,ctx,country));
     }
-    if(route==='eras') {
+    if(route==='eras' || route==='era-wiki') {
       const point=parsePoint(url.searchParams);
       if(!point || !point.name || point.kind==='country')return respond({error:'Valitse paikka.'},400);
-      return respond(await eras({ ...point, alias:(url.searchParams.get('alias') || '').slice(0,45), year:null },url.searchParams.get('lang')==='en'?'en':'fi'));
+      const language = url.searchParams.get('lang')==='en'?'en':'fi';
+      if(route==='era-wiki')return respond(await eraWiki({ ...point, year:null },language));
+      return respond(await eras({ ...point, alias:(url.searchParams.get('alias') || '').slice(0,45), year:null },language));
     }
     if(route==='place') {
       const p=parsePoint(url.searchParams);
