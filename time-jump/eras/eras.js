@@ -140,7 +140,7 @@ async function loadPlace(selected, keepFilters = false) {
     precision.replaceChildren();
   }
   try {
-    const response = await api('eras',{lat:place.lat,lon:place.lon,name:place.name,article:place.article||'',lang:language},signal);
+    const response = await api('eras',{lat:place.lat,lon:place.lon,name:place.name,article:place.article||'',alias:place.alias,lang:language},signal);
     if(signal.aborted)return;
     data=response;
     byId('place-name').textContent=selected.label;
@@ -167,7 +167,7 @@ byId('search').addEventListener('submit',async event=>{
       const item=text('li','');
       const button=text('button',hit.label);
       button.type='button';
-      button.addEventListener('click',()=>loadPlace(hit));
+      button.addEventListener('click',()=>loadPlace({ ...hit, alias:q }));
       item.append(button);
       byId('places').append(item);
     }

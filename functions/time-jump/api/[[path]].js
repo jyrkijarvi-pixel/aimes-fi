@@ -202,7 +202,8 @@ function mediaCategory(context) {
 }
 function photo(page, point, radius, named = false, eras = false) {
   const info = page.imageinfo?.[0];
-  if (!info || !/^image\/(jpeg|png|webp)$/.test(info.mime)) return null;
+  if (!info || (!/^image\/(jpeg|png|webp)$/.test(info.mime) &&
+      !(eras && info.mime === 'image/tiff' && /\.jpe?g(?:\?|$)/i.test(info.thumburl || '')))) return null;
   const meta = key => plain(info.extmetadata?.[key]?.value);
   const license = meta('LicenseShortName');
   const licenseUrl = meta('LicenseUrl');
@@ -224,6 +225,7 @@ function photo(page, point, radius, named = false, eras = false) {
   const localNames = eras ? commonsNames(point) : [(point.name || '').split(',')[0]];
   const titleNamesPlace = localNames.some(name => fold(name).length >= 4 && fold(title).includes(fold(name)));
   if (named && !titleNamesPlace) return null;
+  if (eras && nearest && nearest.metres > 15000) return null;
   if (!named && (!nearest || nearest.metres > radius)) return null;
   const src = info.thumburl || info.url;
   if (!/^https:\/\/(?:upload|thumb)\.wikimedia\.org\//.test(src) || !/^https:\/\/commons\.wikimedia\.org\//.test(info.descriptionurl)) return null;
@@ -256,7 +258,7 @@ const archive = {
 };
 
 function commonsNames(point) {
-  const names = unique([point.name, point.article].map(name => name?.split(',')[0].trim()));
+  const names = unique([point.alias, point.name, point.article].map(name => name?.split(',')[0].trim()));
   return names.filter(name => name.length >= 4 && name.length <= 45 && /^[\p{L}\p{N}\s\-']+$/u.test(name));
 }
 
@@ -271,15 +273,15 @@ async function pictures(point, eras = false) {
   // Also look for source files whose titles mention the place, even if they lack geo tags.
   const names = commonsNames(eras ? point : {name:point.name});
   if (point.kind !== 'country' && names.length) {
-    const title = '('+names.map(name=>'intitle:"'+name+'"').join(' OR ')+')';
+    const title = 'intitle:"'+names[0]+'"';
     requests.push(wiki(host, {
       generator:'search', gsrnamespace:6, gsrlimit:30,
-      gsrsearch:(eras ? title : 'intitle:"'+names[0]+'"')+' filetype:bitmap',
+      gsrsearch:title+' filetype:bitmap',
       ...mediaProps
     }));
     if (eras) requests.push(wiki(host, {
       generator:'search', gsrnamespace:6, gsrlimit:48,
-      gsrsearch:title+' filetype:bitmap (archive OR historical OR "black and white" OR 1890 OR 1900 OR 1910 OR 1920 OR 1930 OR 1940 OR 1950 OR 1960 OR 1970 OR 1980 OR 1990)',
+      gsrsearch:title+' filetype:bitmap hastemplate:Photograph',
       ...mediaProps
     }));
   }
@@ -418,7 +420,7 @@ export async function onRequest(ctx) {
     if(route==='eras') {
       const point=parsePoint(url.searchParams);
       if(!point || !point.name || point.kind==='country')return respond({error:'Valitse paikka.'},400);
-      return respond(await eras({ ...point, year:null },url.searchParams.get('lang')==='en'?'en':'fi'));
+      return respond(await eras({ ...point, alias:(url.searchParams.get('alias') || '').slice(0,45), year:null },url.searchParams.get('lang')==='en'?'en':'fi'));
     }
     if(route==='place') {
       const p=parsePoint(url.searchParams);
