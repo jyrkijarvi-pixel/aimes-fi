@@ -29,6 +29,11 @@
       </div>
       <p id="notice" class="notice" role="status" hidden></p>
       <noscript><p class="notice">Voit katsoa valokuvaa ja lukea lähteet. Syvyysohjaus tarvitsee JavaScriptin.</p></noscript>
+      <div id="comparison" class="comparison" hidden>
+        <label for="reveal">Arkistokuvan osuus</label>
+        <input id="reveal" type="range" min="0" max="100" value="50">
+        <button type="button" id="close-compare">Sulje</button>
+      </div>
     </div>
     <div class="panel">
       <div class="panel-copy">
@@ -40,11 +45,6 @@
         <button type="button" id="look-right" aria-label="Katso oikealle">→</button>
         <button type="button" id="reset">Lähtökuva</button>
         <button type="button" id="compare" aria-pressed="false" aria-controls="comparison">Vertaa arkistokuvaan</button>
-      </div>
-      <div id="comparison" class="comparison" hidden>
-        <label for="reveal">Näytä arkistokuvaa</label>
-        <input id="reveal" type="range" min="0" max="100" value="50">
-        <p class="muted">Vasemmalla alkuperäinen kuva, oikealla sama kuva syvyystasojen kanssa. Voit tarkistaa koko alkuperäisen rajauksen lähteistä.</p>
       </div>
     </div>
   </section>

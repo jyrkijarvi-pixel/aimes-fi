@@ -43,10 +43,10 @@ button:disabled { opacity:.46; cursor:default; }
 .actions { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .actions button { font-size:.85rem; }
 #look-left,#look-right { min-width:44px; }
-.comparison { flex-basis:100%; display:flex; flex-wrap:wrap; align-items:center; gap:7px 14px; padding-top:9px; border-top:1px solid var(--line); }
-.comparison label { font-size:.9rem; }
-.comparison input { flex:1 1 160px; min-height:42px; max-width:420px; accent-color:var(--gold); }
-.comparison p { flex:1 0 100%; }
+.comparison { position:absolute; inset:auto 10px 10px; max-width:660px; margin-inline:auto; display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--line); border-radius:5px; background:#101b1bf2; cursor:default; }
+.comparison label { font-size:.8rem; }
+.comparison input { flex:1 1 110px; min-width:56px; min-height:44px; accent-color:var(--gold); touch-action:none; }
+.comparison button { font-size:.8rem; }
 .context { max-width:1510px; padding:clamp(22px,4vw,56px); margin:auto; }
 .context h2 { margin:0 0 12px; font:400 clamp(1.8rem,4vw,3.5rem)/1.1 Georgia,serif; letter-spacing:-.035em; }
 .context > p { max-width:72ch; margin-bottom:14px; color:var(--muted); }
