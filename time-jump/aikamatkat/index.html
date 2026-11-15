@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a171a">
+<meta name="description" content="TIME JUMP – kuusi maksutonta, käveltävää historiallista 3D-havainnetta ja linkit nykyisiin katunäkymiin.">
+<title>TIME JUMP · Kuusi aikamatkaa · AIMES</title>
+<link rel="stylesheet" href="style.css">
+<script defer src="worlds.js"></script>
+</head>
+<body>
+<a class="skip" href="#content">Siirry sisältöön</a>
+<header class="top">
+  <a class="brand" href="/"><strong>AIMES</strong><span>WORLD EXPLORER · TIME JUMP</span></a>
+  <a class="back-link" href="/">← Maailmankartalle</a>
+</header>
+<main id="content">
+<section class="hero">
+  <p class="eyebrow">TIME JUMP / KÄVELTÄVÄT AIKAMATKAT · KOEVERSIO</p>
+  <h1>Kuusi paikkaa.<br><em>Kuusi aikakautta.</em></h1>
+  <p class="lead">Valitse kohde ja tallustele pienessä kolmiulotteisessa aikakausimaisemassa. Kokeilu toimii selaimessa ilman käyttäjätiliä, AI-rajapintoja tai maksullista generointia.</p>
+  <p class="warning"><strong>Tärkeää:</strong> Nämä ovat <strong>tyyliteltyjä, kuvitteellisia 3D-havainneympäristöjä</strong>, eivät oikeita vuoden 1900, 1930 tai 1962 katunäkymiä. Rakennusten täsmällisiä sijainteja ja ulkonäköä ei ole todennettu.</p>
+</section>
+<section class="choices" id="choices" aria-labelledby="choices-heading">
+<h2 id="choices-heading">Minne lähdetään?</h2>
+<div class="world-grid" role="group" aria-label="Valitse käveltävä kohde">
+  <button type="button" class="world-card" data-world="helsinki"><span class="world-era">SUOMI · 1952</span><strong>Helsinki</strong><span>Kauppatorin tunnelmaa</span></button>
+  <button type="button" class="world-card" data-world="punkalaidun"><span class="world-era">SUOMI · 1962</span><strong>Punkalaidun</strong><span>Kylänraitti</span></button>
+  <button type="button" class="world-card" data-world="paris"><span class="world-era">RANSKA · 1900</span><strong>Pariisi</strong><span>Kaupunki näyttelyvuonna</span></button>
+  <button type="button" class="world-card" data-world="newyork"><span class="world-era">USA · 1930</span><strong>New York</strong><span>Manhattanin katumaisema</span></button>
+  <button type="button" class="world-card" data-world="rome"><span class="world-era">ROOMA · 100</span><strong>Rooma</strong><span>Forum Romanumin henkeä</span></button>
+  <button type="button" class="world-card" data-world="laukeela"><span class="world-era">SUOMI · 1962</span><strong>Urjala / Laukeela</strong><span>Kirkonmäen kyläkeskusta</span></button>
+</div>
+</section>
+<section class="walk-shell" id="walk-shell" aria-labelledby="walk-title" hidden>
+<div class="walk-heading">
+ <div><p class="eyebrow">VALMIS KEVYT 3D-KOEMAailma · EI ARKISTOKUVA</p><h2 id="walk-title" tabindex="-1"></h2><p id="walk-intro" class="fine"></p></div>
+ <button type="button" class="quiet-btn" id="change-world">← Vaihda paikkaa</button>
+</div>
+<div class="walk-layout">
+ <div class="scene-column">
+  <div class="scene-stage">
+   <canvas id="scene" tabindex="0" role="img" aria-label="Kolmiulotteinen tyylitelty kävelynäkymä. W ja nuoli ylös eteenpäin, S taakse, A ja D sivulle, vasen ja oikea nuoli kääntävät, E tutkii kohdetta."></canvas>
+   <div class="scene-label">TAITEELLINEN 3D-TULKINTA · EI OIKEA HISTORIALLINEN KATUKUVA</div>
+   <div class="scene-hud" id="scene-hud" aria-live="polite"></div>
+   <div class="control-pad" aria-label="Kosketusohjaimet">
+    <button type="button" data-move="turn-left" aria-label="Käänny vasemmalle">↶</button>
+    <button type="button" data-move="forward" aria-label="Kävele eteenpäin">↑</button>
+    <button type="button" data-move="turn-right" aria-label="Käänny oikealle">↷</button>
+    <button type="button" data-move="left" aria-label="Sivuaskel vasemmalle">←</button>
+    <button type="button" data-move="backward" aria-label="Kävele taaksepäin">↓</button>
+    <button type="button" data-move="right" aria-label="Sivuaskel oikealle">→</button>
+   </div>
+  </div>
+  <p class="keyboard"><strong>Liiku:</strong> W/A/S/D, nuolinäppäimet tai ruudun painikkeet. Käännä katsetta hiirellä raahaamalla. Paina <kbd>E</kbd> kohteen lähellä.</p>
+  <div class="actions">
+   <button class="quiet-btn" id="reset" type="button">↻ Aloita uudestaan</button>
+   <button class="quiet-btn" id="inspect" type="button">Tutki lähellä olevaa kohdetta · E</button>
+  </div>
+ </div>
+ <aside class="sidebar">
+  <div class="side-card"><h3>Missä kuljen?</h3><canvas id="mini" width="240" height="175" aria-label="Piirretty havainnekartta alueesta ja sijainnista"></canvas><p id="position" class="fine"></p></div>
+  <div class="side-card"><h3>Nykyinen Street View</h3>
+   <p class="fine">Avaa erikseen Googlen nykyinen katunäkymä. Se <strong>ei näytä valittua historiallista vuotta</strong> eikä käytä AIMESin Maps-API-avainta.</p>
+   <a id="street-view" class="action-link" href="https://www.google.com/maps/" target="_blank" rel="noopener noreferrer">Avaa Google Street View ↗</a>
+   <p class="micro">Jos Googlella ei ole kuvattua katunäkymää tästä pisteestä, se voi näyttää muun näkymän tai kartan.</p>
+  </div>
+  <div class="side-card"><h3>Mitä tiedämme?</h3><p id="history" class="fine"></p><a id="source" target="_blank" rel="noopener noreferrer">Tutustu taustalähteeseen ↗</a></div>
+  <div class="side-card"><h3>Lisää tutkittavaa</h3><a href="/time-jump/" class="action-link secondary">Maailmankartta ja aidot arkistokuvat ↗</a><a id="helsinki-demo" href="/time-jump/helsinki-1952/" class="action-link secondary" hidden>Laajempi Helsinki 1952 -demo ↗</a></div>
+ </aside>
+</div>
+</section>
+<noscript><p class="warning">Käveltävä 3D-koealue tarvitsee selaimen JavaScriptin. Maailmankartta toimii osoitteessa <a href="/">aimes.fi</a>.</p></noscript>
+</main>
+<footer>TIME JUMP · AIMES · Maksuton kokeilu · Ei ulkoista 3D- tai tekoäly-APIa · <a href="/">Palaa maailmankartalle</a></footer>
+</body>
+</html>
