@@ -221,8 +221,8 @@ function photo(page, point, radius, named = false, eras = false) {
     return !best || metres < best.metres ? { lat:candidate.lat, lon:candidate.lon, metres } : best;
   }, null);
   // A title containing the place name is a useful lead, not verified geographic evidence.
-  const localName = fold(point.name).replace(/\s*,.*/, '');
-  const titleNamesPlace = localName.length >= 4 && fold(title).includes(localName);
+  const localNames = eras ? commonsNames(point) : [(point.name || '').split(',')[0]];
+  const titleNamesPlace = localNames.some(name => fold(name).length >= 4 && fold(title).includes(fold(name)));
   if (named && !titleNamesPlace) return null;
   if (!named && (!nearest || nearest.metres > radius)) return null;
   const src = info.thumburl || info.url;
@@ -255,6 +255,11 @@ const archive = {
   date: '19.7.1952', year: 1952, lat:60.187, lon:24.927, locationApprox:true, distance:1500, category:'people', kind:'Valokuva', locationEvidence:'coordinates'
 };
 
+function commonsNames(point) {
+  const names = unique([point.name, point.article].map(name => name?.split(',')[0].trim()));
+  return names.filter(name => name.length >= 4 && name.length <= 45 && /^[\p{L}\p{N}\s\-']+$/u.test(name));
+}
+
 async function pictures(point, eras = false) {
   const radius = point.kind === 'country' ? 2500 : 5000;
   if (Math.abs(point.lat) >= 89.99) return [];
@@ -264,17 +269,17 @@ async function pictures(point, eras = false) {
     wiki(host, { ...geo(point, radius, 48, 6), ggsprimary:'all', ...mediaProps })
   ];
   // Also look for source files whose titles mention the place, even if they lack geo tags.
-  const placeName = (point.name || '').split(',')[0].trim();
-  if (point.kind !== 'country' && placeName.length >= 4 && placeName.length <= 45
-      && !/[^\p{L}\p{N}\s\-']/u.test(placeName)) {
+  const names = commonsNames(eras ? point : {name:point.name});
+  if (point.kind !== 'country' && names.length) {
+    const title = '('+names.map(name=>'intitle:"'+name+'"').join(' OR ')+')';
     requests.push(wiki(host, {
       generator:'search', gsrnamespace:6, gsrlimit:30,
-      gsrsearch:'intitle:"' + placeName + '" filetype:bitmap',
+      gsrsearch:(eras ? title : 'intitle:"'+names[0]+'"')+' filetype:bitmap',
       ...mediaProps
     }));
     if (eras) requests.push(wiki(host, {
       generator:'search', gsrnamespace:6, gsrlimit:48,
-      gsrsearch:'intitle:"' + placeName + '" filetype:bitmap (archive OR historical OR "black and white" OR 1900 OR 1910 OR 1920 OR 1930 OR 1940 OR 1950 OR 1960 OR 1970 OR 1980 OR 1990)',
+      gsrsearch:title+' filetype:bitmap (archive OR historical OR "black and white" OR 1890 OR 1900 OR 1910 OR 1920 OR 1930 OR 1940 OR 1950 OR 1960 OR 1970 OR 1980 OR 1990)',
       ...mediaProps
     }));
   }
@@ -332,7 +337,7 @@ function captureDate(raw) {
   if (decade && valid(+decade[1]*10)) return { precision:'approximate', start:+decade[1]*10, end:Math.min(+decade[1]*10+9,new Date().getUTCFullYear()) };
   const range = value.match(/^(?:between\s+)?(\d{4})\s*(?:[–—/-]|and|to)\s*(\d{4})$/i);
   if (range && valid(+range[1]) && valid(+range[2]) && +range[1]<=+range[2]) return { precision:'approximate', start:+range[1], end:+range[2] };
-  const circa = value.match(/^(?:circa|ca\.?|c\.|noin|n\.|vers)\s*(\d{4})$/i);
+  const circa = value.match(/^(?:circa|approx\.?|around|ca\.?|c\.|noin|n\.|vers)\s*(\d{4})$/i);
   if (circa && valid(+circa[1])) return { precision:'approximate', start:+circa[1], end:+circa[1], uncertain:true };
   return unknown;
 }
@@ -349,7 +354,15 @@ async function eras(point, language) {
     const index = media.findIndex(image => image.url === archive.url);
     const record = { ...archive, src:'/time-jump/' + archive.src, date:'1952-07-19' };
     if (index >= 0) media.splice(index, 1);
-    media.unshift(record);
+    const market = [
+      ['Kolera-allas, Kauppatori','Arvo Kajantie','kolera-allas.webp','1950–1959','hkm.87455276-66CB-47DF-98AF-DF2A3EA7C062'],
+      ['Kaupungintalo ja Kauppatori','Börje Dilén','kaupungintalo-1952.webp','1952','hkm.429E061A-83E3-4F8C-AFE2-AACC8CA07B86']
+    ].map(([title, artist, file, date, id])=>({
+      title,artist:artist+' / Helsingin kaupunginmuseo',date,locationEvidence:'archive',
+      src:'/time-jump/helsinki-1952-photo/'+file, original:'https://www.finna.fi/Record/'+id,
+      license:'Public Domain Mark',licenseUrl:'https://creativecommons.org/publicdomain/mark/1.0/'
+    }));
+    media.unshift(record,...market);
   }
   const photos = media.map(image => ({ ...image, capture:captureDate(image.date) }));
   const counts = new Map();

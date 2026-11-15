@@ -9,7 +9,7 @@ const labels = {
     searching:'Haetaan…',loading:'Etsitään valokuvia ja Wikipedia-tietoja…',noPlaces:'Paikkaa ei löytynyt. Kokeile toista nimeä.',failed:'Haku epäonnistui. Yritä uudelleen.',
     noPhotos:'Tällä rajauksella ei löytynyt valokuvia.',photoFailed:'Commons-haku ei vastannut. Paikallinen arkistoaineisto näkyy, jos sitä on.',
     imageFailed:'Kuva ei latautunut. Voit avata lähdesivun.',notDated:'Lähde ei ilmoita tunnistettavaa kuvausaikaa.',photoSource:'Avaa kuvan lähde',license:'Käyttöoikeus',
-    artistUnknown:'Tekijää ei ilmoitettu',coordinates:'Sijaintiyhteys: Commonsin koordinaatit.',titleMatch:'Sijaintiyhteys: tiedoston otsikko. Sijaintia ei ole vahvistettu.',
+    artistUnknown:'Tekijää ei ilmoitettu',coordinates:'Sijaintiyhteys: Commonsin koordinaatit.',titleMatch:'Sijaintiyhteys: tiedoston otsikko. Sijaintia ei ole vahvistettu.',archive:'Sijaintiyhteys: museon tietue.',
     wikiMissing:'Tälle paikalle ei löytynyt Wikipedia-tietoja.',wikiFailed:'Wikipedia ei vastannut.',nearby:'Lähikohteita Wikipediassa',count:'kuvaa',estimate:'likimääräistä',dated:'tarkkaa',partial:'Osa Commonsin hauista epäonnistui. Löydöt ovat osittaisia.'
   },
   en: {
@@ -20,7 +20,7 @@ const labels = {
     searching:'Searching…',loading:'Searching for photographs and Wikipedia information…',noPlaces:'No place found. Try another name.',failed:'The request failed. Try again.',
     noPhotos:'No photographs match these filters.',photoFailed:'Commons did not respond. Local archive material is shown where available.',
     imageFailed:'The image could not be loaded. You can open its source page.',notDated:'The source has no recognizable capture date.',photoSource:'Open photo source',license:'Usage rights',
-    artistUnknown:'Artist not provided',coordinates:'Location evidence: Commons coordinates.',titleMatch:'Location evidence: filename. The location is unverified.',
+    artistUnknown:'Artist not provided',coordinates:'Location evidence: Commons coordinates.',titleMatch:'Location evidence: filename. The location is unverified.',archive:'Location evidence: museum record.',
     wikiMissing:'No Wikipedia information found for this place.',wikiFailed:'Wikipedia did not respond.',nearby:'Nearby in Wikipedia',count:'photos',estimate:'approximate',dated:'precise',partial:'Some Commons searches failed. These results are incomplete.'
   }
 };
@@ -112,7 +112,7 @@ function photoCard(image) {
   const artist = image.artist === 'Tekijää ei ilmoitettu' ? t('artistUnknown') : image.artist;
   caption.append(text('strong',image.title),text('small',artist),
     text('small',t(image.capture.precision)+(image.date?' · '+image.date:' · '+t('notDated'))),
-    text('small',t(image.locationEvidence==='coordinates'?'coordinates':'titleMatch')));
+    text('small',t(image.locationEvidence==='coordinates'?'coordinates':image.locationEvidence==='archive'?'archive':'titleMatch')));
   if(image.restrictions)caption.append(text('small',image.restrictions));
   const source = text('small','');
   source.append(link(t('photoSource'),image.original || image.url),document.createTextNode(' · '+t('license')+' '),
