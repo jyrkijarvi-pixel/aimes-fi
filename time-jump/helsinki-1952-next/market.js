@@ -4,6 +4,7 @@ const v = (x,y,z) => new T.Vector3(x,y,z);
 const material = color => new T.MeshStandardMaterial({color,roughness:.82});
 const stone=material(0x77726a), trim=material(0xc4b8a2), glass=material(0x314649);
 const wood=material(0x75543b), dark=material(0x372b24), metal=material(0x333e39);
+let plasterMap;
 const boxGeometry=new T.BoxGeometry();
 const batches=new Map();
 function box(parent,mat,x,y,z,w,h,d) {
@@ -66,7 +67,7 @@ function cobbles() {
 function floor(scene,w,d,x,z) {
   const mat=new T.MeshStandardMaterial({map:cobbles(),roughness:.93});
   mat.map.repeat.set(w/4,d/4);
-  const item=mesh(scene,new T.PlaneGeometry(w,d),mat,x,.015,z);
+  const item=mesh(scene,new T.PlaneGeometry(w,d),mat,x,.035,z);
   item.rotation.x=-Math.PI/2; item.castShadow=false;
 }
 function roof(parent,mat,w,d,rise,y) {
@@ -85,6 +86,7 @@ function triangle(parent,mat,w,h,x,y,z) {
 function facade(scene,{x,z,w,d,h,stories,bays,color,civic=false}) {
   const group=new T.Group();group.position.set(x,0,z);scene.add(group);
   const plaster=material(color), slate=material(0x3e555b);
+  plaster.map=plasterMap;
   const front=d/2;
   box(group,plaster,0,h/2,0,w,h,d);
   box(group,stone,0,.42,front+.04,w+.13,.84,.22);
@@ -226,6 +228,51 @@ function water(scene) {
   const item=mesh(scene,geometry,new T.MeshStandardMaterial({map,color:0xadc1c5,roughness:.32,metalness:.13}),0,-.64,66);
   item.rotation.x=-Math.PI/2;item.castShadow=false;
 }
+function sky(scene) {
+  const geometry=new T.SphereGeometry(150,24,16);
+  const mat=new T.ShaderMaterial({
+    side:T.BackSide, depthWrite:false,
+    vertexShader:`
+      varying vec3 direction;
+      void main() {
+        direction = normalize(position);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader:`
+      varying vec3 direction;
+      float noise(vec2 p) {
+        vec2 i=floor(p), f=fract(p);
+        f=f*f*(3.0-2.0*f);
+        vec4 h=fract(sin(vec4(dot(i,vec2(127.1,311.7)),dot(i+vec2(1,0),vec2(127.1,311.7)),
+          dot(i+vec2(0,1),vec2(127.1,311.7)),dot(i+vec2(1),vec2(127.1,311.7))))*43758.54);
+        return mix(mix(h.x,h.y,f.x),mix(h.z,h.w,f.x),f.y);
+      }
+      void main() {
+        vec3 d=normalize(direction);
+        float h=max(d.y,0.0);
+        vec3 color=mix(vec3(.71,.78,.78),vec3(.30,.52,.68),pow(h,.55));
+        vec2 p=d.xz/max(.09,d.y+.2)*4.0;
+        float n=noise(p)*.64+noise(p*2.13)*.25+noise(p*4.5)*.11;
+        float clouds=smoothstep(.46,.82,n)*smoothstep(.01,.20,h);
+        gl_FragColor=vec4(mix(color,vec3(.91,.90,.84),clouds*.66),1.0);
+      }`
+  });
+  const dome=new T.Mesh(geometry,mat);
+  dome.renderOrder=-1;
+  scene.add(dome);
+}
+function harbourLaunch(scene) {
+  const group=new T.Group();
+  group.position.set(25,-.55,15);scene.add(group);
+  const cream=material(0xdad1b4);
+  const hull=mesh(group,new T.SphereGeometry(1,28,12),dark,0,.24,0);
+  hull.scale.set(4.5,.53,1.06);
+  box(group,cream,0,.65,0,7.2,.36,1.61);
+  box(group,cream,-.5,1.35,0,4.5,1.18,1.43);
+  box(group,cream,-.5,1.99,0,4.67,.17,1.58);
+  for(const side of [-1,1]) for(let i=0;i<6;i++) box(group,glass,-2.24+i*.68,1.53,side*.725,.51,.43,.036);
+  cylinder(group,metal,-1.73,2.21,0,.089,.104,.45);
+}
 export function buildMarket(scene) {
   scene.background=new T.Color(0xa9c0ca);
   scene.fog=new T.FogExp2(0xa9c0ca,.006);
@@ -236,6 +283,14 @@ export function buildMarket(scene) {
   Object.assign(sun.shadow.camera,{left:-48,right:48,top:42,bottom:-42,far:120});
   sun.shadow.mapSize.set(1024,1024);sun.shadow.normalBias=.035;
   scene.add(sun);
+  sky(scene);
+  plasterMap=texture(ctx=>{
+    ctx.fillStyle='#f7f1e4';ctx.fillRect(0,0,512,512);
+    for(let i=0;i<16000;i++){
+      ctx.fillStyle=random()>.5?'#75675420':'#b5a99027';
+      ctx.fillRect(random()*512,random()*512,1+random()*6,1+random()*4);
+    }
+  });
   water(scene);
   box(scene,stone,4,-.48,-13,122,1,36);
   box(scene,stone,-35,-.48,13,49,1,16);
@@ -266,7 +321,8 @@ export function buildMarket(scene) {
   for(let i=0;i<5;i++)stall(scene,-22+i*6.1,-16.4,stallColors[(i+2)%5]);
   const boats=[[-7.4,9,-.45,5.5],[-3,7.4,1.2,5.1],[3.3,7.6,1.15,5.5],[8.5,8.4,1.3,4.9],[15.6,8.6,1.5,5.9],[-6.9,15.6,-.14,6.2],[23,11,1.45,7.3]];
   boats.forEach((boatSpec,index)=>boat(scene,...boatSpec,index));
-  for(const [x,z] of [[-17,-10],[-9,-5],[1,-11],[8,-6],[20,-13],[29,-5],[-12,2],[-17,8],[-15,11],[6,-18],[-25,-13],[33,-12]]) {
+  harbourLaunch(scene);
+  for(const [x,z] of [[-17,-10],[-9,-5],[1,-11],[8,-6],[20,-13],[29,-5],[-12,-1],[-25,7],[-28,1],[6,-18],[-25,-13],[33,-12]]) {
     const coats=[0x5a5142,0x4b5059,0x877960,0x777d6e,0x5b3e38];
     human(scene,x,z,1.55+random()*.25,coats[Math.floor(random()*coats.length)],random()*5,random()>.67);
   }

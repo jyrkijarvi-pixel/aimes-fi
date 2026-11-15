@@ -113,6 +113,7 @@ enter.addEventListener('click',()=>{
   active=true;
   arrival.hidden=true;
   overlay.hidden=false;
+  window.scrollTo(0,0);
   canvas.focus({preventScroll:true});
   dirty=true;
   frame=requestAnimationFrame(tick);
