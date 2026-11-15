@@ -132,27 +132,46 @@ function geo(point, radius, limit, namespace) {
 }
 
 const articleProps = { prop: 'extracts|info|coordinates|pageprops', exintro: 1, explaintext: 1, exsentences: 2, exlimit: 10, inprop: 'url', ppprop: 'disambiguation' };
-function toArticle(page) {
+function toArticle(page, language) {
   if (!page.fullurl || page.pageprops?.disambiguation !== undefined) return null;
   const coordinate = page.coordinates?.[0];
-  return { title: page.title, url: page.fullurl, extract: page.extract || '', point: coordinate ? { lat: coordinate.lat, lon: coordinate.lon } : null };
+  return { title: page.title, url: page.fullurl, extract: page.extract || '', language, point: coordinate ? { lat: coordinate.lat, lon: coordinate.lon } : null };
 }
 
-async function articles(point) {
-  const byGeo = await wiki('en.wikipedia.org', { ...geo(point, 10000, 10, 0), ...articleProps });
-  const nearby = byGeo.map(toArticle).filter(article => article?.point)
+async function articlesInLanguage(point, language) {
+  const host = language + '.wikipedia.org';
+  const byGeo = await wiki(host, { ...geo(point, 10000, 10, 0), ...articleProps });
+  const nearby = byGeo.map(page => toArticle(page, language)).filter(article => article?.point)
     .map(article => ({ ...article, distance: Math.round(distance(point, article.point)) }))
     .sort((a, b) => a.distance - b.distance);
-  const title = point.article || point.name;
+  const title = language === 'fi' ? point.name || point.article : point.article || point.name;
   let main = nearby.find(article => fold(article.title) === fold(title));
   if (!main && title) {
     try {
-      const rows = await wiki('en.wikipedia.org', { titles: title, redirects: 1, ...articleProps });
-      const article = toArticle(rows[0] || {});
+      const rows = await wiki(host, { titles: title, redirects: 1, ...articleProps });
+      const article = toArticle(rows[0] || {}, language);
       if (article?.point && distance(point, article.point) < (point.kind === 'country' ? 650000 : 22000)) main = article;
     } catch { /* Nearby articles remain usable. */ }
   }
   return { main: main || null, nearby: nearby.filter(article => article.url !== main?.url).slice(0, 6) };
+}
+
+async function articles(point) {
+  const results = await Promise.allSettled(['fi', 'en'].map(language => articlesInLanguage(point, language)));
+  const [finnish, english] = results.map(result => result.value);
+  if (!finnish && !english) throw results[0].reason;
+  const main = finnish?.main || english?.main || null;
+  const seen = new Set([finnish?.main, english?.main].filter(Boolean).map(article => fold(article.title)));
+  const candidates = [...finnish?.nearby || [], ...english?.nearby || []].sort((a,b) => a.distance - b.distance);
+  const nearby = [];
+  for (const article of candidates) {
+    const key = fold(article.title);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    nearby.push(article);
+    if (nearby.length === 6) break;
+  }
+  return { main, nearby };
 }
 
 const mediaProps = {

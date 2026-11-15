@@ -285,6 +285,28 @@ main:has(#search-panel[hidden]) .time-jump-cards { display:none; }
 /* Keep the place search visible on narrow screens before map and cards. */
 @media (max-width:820px) {
   .atlas { display:flex; flex-direction:column; }
+  .map-panel { align-self:stretch; }
   .search-panel,.destination { order:-1; }
   .time-jump-card img { aspect-ratio:16/9; max-height:190px; }
+}
+
+/* Keep each AIMES destination visible without a menu, including on phones. */
+.top { flex-wrap:wrap; }
+.aimes-nav { display:flex; flex:1 1 490px; flex-wrap:wrap; gap:0 clamp(8px,1.15vw,18px); align-items:center; }
+.aimes-nav a,.aimes-nav button {
+  display:inline-flex;
+  align-items:center;
+  min-height:42px;
+  padding:4px 0;
+  font-size:.86rem;
+  color:var(--mint);
+  text-decoration:underline;
+  text-underline-offset:.2em;
+}
+.aimes-nav button { border:0; background:none; font-family:inherit; }
+.aimes-nav a:hover,.aimes-nav button:hover { color:#fff4d7; }
+@media (max-width:700px) {
+  .top { gap:3px 12px; }
+  .aimes-nav { flex-basis:100%; order:2; }
+  .aimes-nav a,.aimes-nav button { min-height:39px; }
 }

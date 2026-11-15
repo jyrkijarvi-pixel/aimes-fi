@@ -239,7 +239,7 @@ function renderContext(wiki, available) {
   if (wiki.main) {
     context.append(text('h3', wiki.main.title));
     if (wiki.main.extract) context.append(text('p', wiki.main.extract));
-    context.append(link('Englanninkielinen Wikipedia · artikkeli ja tekijät ↗', wiki.main.url), document.createTextNode(' · '), link('CC BY-SA', 'https://creativecommons.org/licenses/by-sa/4.0/'));
+    context.append(link(wiki.main.language === 'fi' ? 'Suomenkielinen Wikipedia ↗' : 'Englanninkielinen Wikipedia ↗', wiki.main.url), document.createTextNode(' · '), link('CC BY-SA', 'https://creativecommons.org/licenses/by-sa/4.0/'));
   }
   if (wiki.nearby.length) {
     const list = text('ul', '', 'nearby');
@@ -251,7 +251,7 @@ function renderContext(wiki, available) {
       list.append(item);
     }
     context.append(text('h3', 'Lähikohteet'), list);
-  } else if (!wiki.main) {
+  } else {
     context.append(text('p', available ? 'Läheltä ei löytynyt koordinaatein merkittyjä Wikipedia-artikkeleita.' : 'Wikipedia-tietoja ei saatu ladattua.'));
   }
 }
@@ -312,6 +312,7 @@ async function travel(point, year = null, move = true) {
   byId('source-time').value = 'all';
   byId('source-filter-status').textContent = '';
   byId('gallery-count').textContent = 'Etsitään aineistoa…';
+  byId('enter-explorer').disabled = true;
   nearbyPlaces = [];
   showDemo = false;
   clearPhoto();
@@ -347,6 +348,7 @@ async function travel(point, year = null, move = true) {
         : 'Wikimedia Commonsista ei löytynyt tähän hakuun sopivaa, sallittua aineistoa. Kaikkien museoiden aineistot eivät kuulu tähän hakuun.';
     }
     renderContext(data.wiki, data.availability.wiki);
+    byId('enter-explorer').disabled = false;
     return true;
   } catch (error) {
     if (!request.signal.aborted) {
@@ -375,6 +377,16 @@ byId('helsinki').addEventListener('click', () => travel({ ...helsinki1952 }, 195
 byId('home-gallery')?.addEventListener('click', async () => {
   const place = { ...helsinki1952 };
   if (await travel(place, 1952) && current === place && !placeRequest?.signal.aborted) openExplorer();
+});
+byId('nav-gallery').addEventListener('click', () => {
+  if (!byId('explorer').hidden) {
+    byId('gallery-title').scrollIntoView({block:'start'});
+  } else if (current) {
+    if (!byId('enter-explorer').disabled) openExplorer();
+    else byId('place-title').focus();
+  } else {
+    byId('query').focus();
+  }
 });
 byId('back').addEventListener('click', () => {
   placeRequest?.abort();
@@ -413,7 +425,7 @@ byId('search').addEventListener('submit', async event => {
     if (yr && (!Number.isInteger(Number(yr)) || Number(yr) === 0 || Math.abs(Number(yr)) > 100000)) {
       byId('search-year').setCustomValidity('Anna kelvollinen vuosiluku.'); byId('search-year').reportValidity(); return;
     }
-    if (await travel(pointAt(L.latLng(+a,+b)), yr ? Number(yr) : null)) openExplorer();
+    await travel(pointAt(L.latLng(+a,+b)), yr ? Number(yr) : null);
     return;
   }
   if (q.length < 2) { byId('search-status').textContent = 'Kirjoita vähintään kaksi merkkiä.'; return; }
@@ -434,14 +446,14 @@ byId('search').addEventListener('submit', async event => {
         }
         input.setCustomValidity('');
         choose.disabled = true;
-        try { const ok = await travel(place, year); if (ok && current === place && !placeRequest?.signal.aborted) openExplorer(); }
+        try { await travel(place, year); }
         finally { choose.disabled = false; }
       });
       choose.className = 'place-choice';
       const heading = text('strong', place.name || place.label.split(',')[0]);
       const details = text('span', place.label === place.name ? '' : place.label, 'fine');
       const source = text('small', 'Paikkatieto: ' + (place.source || 'tuntematon'));
-      const action = text('span', 'Tutki paikan historiaa →', 'place-action');
+      const action = text('span', 'Näytä kartalla →', 'place-action');
       choose.append(heading, details, source, action);
       item.append(choose);
       byId('results').append(item);
