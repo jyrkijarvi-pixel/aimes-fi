@@ -285,6 +285,7 @@ main:has(#search-panel[hidden]) .time-jump-cards { display:none; }
 /* Keep the place search visible on narrow screens before map and cards. */
 @media (max-width:820px) {
   .atlas { display:flex; flex-direction:column; }
+  .map-panel { align-self:stretch; }
   .search-panel,.destination { order:-1; }
   .time-jump-card img { aspect-ratio:16/9; max-height:190px; }
 }
