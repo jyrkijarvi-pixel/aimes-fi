@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101b1b">
+<title>Kolera-altaan laidalla · AIMES TIME JUMP</title>
+<link rel="stylesheet" href="photo.css">
+<script defer src="photo.js"></script>
+</head>
+<body>
+<header class="masthead"><a href="/time-jump/" class="brand">AIMES <span>TIME JUMP</span></a><a href="#lahteet">Kuvat ja lähteet</a></header>
+<main>
+  <section class="experience" aria-labelledby="title">
+    <div class="viewport" id="viewport">
+      <div class="photograph" id="photograph">
+        <img id="hero-photo" src="kolera-allas.webp" width="1200" height="793" fetchpriority="high" alt="Vanhoja puuveneitä Kolera-altaassa, takana Kauppatorin kojut ja Helsingin kaupungintalon vaalea julkisivu.">
+        <div class="middle depth-layer" aria-hidden="true"></div>
+        <div class="foreground depth-layer" aria-hidden="true"></div>
+      </div>
+      <div class="markers" id="markers" hidden aria-label="Kuvan kohteet">
+        <button class="marker" type="button" data-spot="city" aria-label="Kaupungintalo">1</button>
+        <button class="marker" type="button" data-spot="market" aria-label="Torikojut">2</button>
+        <button class="marker" type="button" data-spot="boats" aria-label="Kolera-altaan veneet">3</button>
+      </div>
+      <aside class="spot-note" id="spot-note" tabindex="-1" aria-labelledby="spot-title" hidden>
+        <button id="close-spot" type="button" aria-label="Sulje tietopiste">×</button>
+        <h2 id="spot-title"></h2>
+        <p id="spot-description"></p>
+        <a id="spot-source" href="#lahteet">Katso lähde</a>
+      </aside>
+      <div class="original" id="original" aria-hidden="true" hidden>
+        <div class="original-photo"></div>
+      </div>
+      <div class="compare-labels" id="compare-labels" hidden><span>Alkuperäinen arkistokuva</span><span>Syvyystulkinta</span></div>
+      <div class="intro" id="intro">
+        <p class="eyebrow">HELSINKI · OLYMPIAKESÄN AIKAAN</p>
+        <h1 id="title">Kolera-altaan<br> laidalla</h1>
+        <p class="intro-credit">Arvo Kajantie · Helsingin kaupunginmuseo · 1950–1959</p>
+      </div>
+      <p id="notice" class="notice" role="status" hidden></p>
+      <noscript><p class="notice">Voit katsoa valokuvaa ja lukea lähteet. Syvyysohjaus tarvitsee JavaScriptin.</p></noscript>
+      <div id="comparison" class="comparison" hidden>
+        <label for="reveal">Arkistokuvan osuus</label>
+        <input id="reveal" type="range" min="0" max="100" value="50">
+        <button type="button" id="close-compare">Sulje</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-copy">
+        <p id="instruction">Vedä kuvaa tai käytä nuolinäppäimiä. Lähennä yksityiskohtia pluspainikkeella.</p>
+        <p class="muted">Kajantien kuva on 1950-luvulta. Vuoden 1952 ajankuva täydentyy Dilénin kuvalla ja matkailijakartalla.</p>
+      </div>
+      <div class="actions" id="actions" hidden>
+        <button type="button" id="zoom-out" aria-label="Loitonna" disabled>−</button>
+        <button type="button" id="zoom-in" aria-label="Lähennä">+</button>
+        <button type="button" id="reset">Lähtökuva</button>
+        <button type="button" id="lite" aria-pressed="false" aria-label="Kevyt 2D-tila">2D</button>
+        <button type="button" id="compare" aria-pressed="false" aria-controls="comparison">Vertaa arkistokuvaan</button>
+      </div>
+      <div class="spot-links" id="spot-links" hidden aria-label="Tutki kuvan kohteita">
+        <button type="button" data-spot="city">1 · Kaupungintalo</button>
+        <button type="button" data-spot="market">2 · Torikojut</button>
+        <button type="button" data-spot="boats">3 · Veneet</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="context" aria-labelledby="details-title">
+    <h2 id="details-title">Mitä kuvassa näkyy?</h2>
+    <div class="facts">
+      <details><summary>Kaupungintalo</summary><p>Vaalea, kolmikerroksinen julkisivu rajaa toria pohjoisessa. Rakennus aloitti Seurahuoneena. Dilénin vuoden 1952 kuvassa erottuu sisäänkäynnin matala pylväskatos.</p><p><a href="https://historia.hel.fi/fi/ilmiot/vallankayttoa-ja-hallintoa/kaupungintalo">Kaupungintalon historia · Helsingin kaupunki</a></p></details>
+      <details><summary>Torikojut ja puuveneet</summary><p>Kajantien kuvassa veneet täyttävät altaan ja kojurivi jatkuu torin laidalla. Helsingin kaupungin mukaan kalastajat myivät saalistaan myös suoraan veneistä.</p><p><a href="https://historia.hel.fi/fi/alueet/etelainen/esplanadit-ja-kauppatori-kaupungin-sykkiva-sydan">Torikaupan historia · Helsingin kaupunki</a></p></details>
+      <details><summary>Vuoden 1952 Kauppatori</summary><p>Matkailijakartta näyttää torin sijainnin Eteläsataman, Esplanadin ja Senaatintorin välissä. Kartta ja Dilénin valokuva ovat vuodelta 1952.</p><p><a href="#lahteet">Katso kartta ja kuvat</a></p></details>
+    </div>
+  </section>
+
+  <section class="context sources" id="lahteet" aria-labelledby="source-title">
+    <h2 id="source-title">Kuvat ja lähteet</h2>
+    <p>Kuvassa näkyvät rakennukset, ihmiset, kojut ja veneet ovat Kajantien valokuvasta. Syvyystasot ja pieni kameraliike ovat tulkintaa. Zoomaus suurentaa samoja kuvapisteitä. Kuvan peittoon jäävät alueet pysyvät peitossa.</p>
+    <div class="facts">
+      <details>
+        <summary>Kolera-allas, alkuperäinen valokuva</summary>
+        <figure><img src="kolera-allas.webp" width="1200" height="793" loading="lazy" alt="Kolera-allas, puiset veneet ja Kauppatori 1950-luvulla."><figcaption>Arvo Kajantie / Helsingin kaupunginmuseo · 1950–1959 · <a href="https://hkm.finna.fi/Record/hkm.87455276-66CB-47DF-98AF-DF2A3EA7C062">Finna</a> · <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark</a></figcaption></figure>
+      </details>
+      <details>
+        <summary>Kaupungintalo vuonna 1952</summary>
+        <figure><img src="kaupungintalo-1952.webp" width="1186" height="1200" loading="lazy" alt="Kaupungintalo ja Kauppatori Börje Dilénin mustavalkokuvassa."><figcaption>Börje Dilén / Helsingin kaupunginmuseo · 1952 · <a href="https://www.finna.fi/Record/hkm.429E061A-83E3-4F8C-AFE2-AACC8CA07B86">Finna</a> · <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark</a></figcaption></figure>
+      </details>
+      <details>
+        <summary>Matkailijakartta vuodelta 1952</summary>
+        <figure><img src="opaskartta-1952.webp" width="1000" height="900" loading="lazy" alt="Vuoden 1952 karttaote Helsingin Kauppatorista, satamasta ja Senaatintorista."><figcaption>Rajattu ote · Helsingin kaupunginkanslia · <a href="https://avoindata.suomi.fi/data/dataset/helsingin-historialliset-opaskartat">Helsingin historialliset opaskartat</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></figcaption></figure>
+      </details>
+    </div>
+  </section>
+</main>
+</body>
+</html>
