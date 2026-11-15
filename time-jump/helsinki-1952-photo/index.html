@@ -18,6 +18,17 @@
         <div class="middle depth-layer" aria-hidden="true"></div>
         <div class="foreground depth-layer" aria-hidden="true"></div>
       </div>
+      <div class="markers" id="markers" hidden aria-label="Kuvan kohteet">
+        <button class="marker" type="button" data-spot="city" aria-label="Kaupungintalo">1</button>
+        <button class="marker" type="button" data-spot="market" aria-label="Torikojut">2</button>
+        <button class="marker" type="button" data-spot="boats" aria-label="Kolera-altaan veneet">3</button>
+      </div>
+      <aside class="spot-note" id="spot-note" tabindex="-1" aria-labelledby="spot-title" hidden>
+        <button id="close-spot" type="button" aria-label="Sulje tietopiste">×</button>
+        <h2 id="spot-title"></h2>
+        <p id="spot-description"></p>
+        <a id="spot-source" href="#lahteet">Katso lähde</a>
+      </aside>
       <div class="original" id="original" aria-hidden="true" hidden>
         <div class="original-photo"></div>
       </div>
@@ -37,14 +48,20 @@
     </div>
     <div class="panel">
       <div class="panel-copy">
-        <p id="instruction">Vedä kuvaa vaakasuunnassa tai käytä nuolia. Liike on rajattu arkistokuvan näkymään.</p>
+        <p id="instruction">Vedä kuvaa tai käytä nuolinäppäimiä. Lähennä yksityiskohtia pluspainikkeella.</p>
         <p class="muted">Kajantien kuva on 1950-luvulta. Vuoden 1952 ajankuva täydentyy Dilénin kuvalla ja matkailijakartalla.</p>
       </div>
       <div class="actions" id="actions" hidden>
-        <button type="button" id="look-left" aria-label="Katso vasemmalle">←</button>
-        <button type="button" id="look-right" aria-label="Katso oikealle">→</button>
+        <button type="button" id="zoom-out" aria-label="Loitonna" disabled>−</button>
+        <button type="button" id="zoom-in" aria-label="Lähennä">+</button>
         <button type="button" id="reset">Lähtökuva</button>
+        <button type="button" id="lite" aria-pressed="false" aria-label="Kevyt 2D-tila">2D</button>
         <button type="button" id="compare" aria-pressed="false" aria-controls="comparison">Vertaa arkistokuvaan</button>
+      </div>
+      <div class="spot-links" id="spot-links" hidden aria-label="Tutki kuvan kohteita">
+        <button type="button" data-spot="city">1 · Kaupungintalo</button>
+        <button type="button" data-spot="market">2 · Torikojut</button>
+        <button type="button" data-spot="boats">3 · Veneet</button>
       </div>
     </div>
   </section>
@@ -60,7 +77,7 @@
 
   <section class="context sources" id="lahteet" aria-labelledby="source-title">
     <h2 id="source-title">Kuvat ja lähteet</h2>
-    <p>Kuvassa näkyvät rakennukset, ihmiset, kojut ja veneet ovat Kajantien valokuvasta. Syvyyden jako ja kameran liike ovat tulkintaa. Liike näyttää saman kuvan rajattuna eri tavalla. Kuvan peittoon jäävät alueet pysyvät peitossa.</p>
+    <p>Kuvassa näkyvät rakennukset, ihmiset, kojut ja veneet ovat Kajantien valokuvasta. Syvyystasot ja pieni kameraliike ovat tulkintaa. Zoomaus suurentaa samoja kuvapisteitä. Kuvan peittoon jäävät alueet pysyvät peitossa.</p>
     <div class="facts">
       <details>
         <summary>Kolera-allas, alkuperäinen valokuva</summary>
