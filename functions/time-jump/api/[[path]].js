@@ -1,5 +1,7 @@
 'use strict';
 
+import { parsePeriod, inPeriod } from '../../../time-jump/eras/period.js';
+
 const ua = 'AIMESWorldExplorer/0.3 (+https://aimes.fi/time-jump/)';
 const configuredSearch = 'https://nominatim.openstreetmap.org/search';
 const regionNames = new Intl.DisplayNames(['fi'], { type: 'region', fallback: 'none' });
@@ -28,13 +30,13 @@ async function ensureCountries(ctx) {
   }).catch(error => { countriesPromise = null; throw error });
   return countriesPromise;
 }
-async function localSearch(query, ctx) {
+async function localSearch(query, ctx, countryCode = '') {
   await ensureCountries(ctx);
   const [name, country] = query.split(',', 2).map(fold);
   const matches = [];
   for (const [short, long, code, lat, lon] of countries) {
     const aliases = [short, long, ...(countryLabels.get(code)||[])];
-    if (aliases.some(label => fold(label) === name)) {
+    if (!countryCode && aliases.some(label => fold(label) === name)) {
       matches.push({ name: aliases[2] || short, label: aliases[2] || short, lat, lon, kind: 'country', article: englishRegions.of(/^[A-Z]{2}$/.test(code) ? code : 'ZZ') || short, source: 'Natural Earth', score: 3e9 });
     }
   }
@@ -42,6 +44,7 @@ async function localSearch(query, ctx) {
   if (!cityCaches.has(shard)) cityCaches.set(shard, assetJson(ctx, `cities-${shard}.json`).catch(error => {cityCaches.delete(shard); throw error}));
   const cities = await cityCaches.get(shard);
   for (const [cityName, , lat, lon, code, population, keys] of cities) {
+    if (countryCode && code !== countryCode) continue;
     const labels = countryLabels.get(code) || [regionNames.of(code) || code];
     if (country && !labels.some(label => fold(label).startsWith(country))) continue;
     const exact = keys.includes(name);
@@ -75,8 +78,8 @@ async function json(url) {
 let nextSearchAt = 0;
 let searchQueue = Promise.resolve();
 
-function remoteSearch(query) {
-  return cached(`osm:${fold(query)}`, () => {
+function remoteSearch(query, countryCode) {
+  return cached(`osm:${countryCode}:${fold(query)}`, () => {
     const request = searchQueue.then(async () => {
       await new Promise(resolve => setTimeout(resolve, Math.max(0, nextSearchAt - Date.now())));
       nextSearchAt = Date.now() + 1100;
@@ -84,6 +87,7 @@ function remoteSearch(query) {
       for (const [key, value] of Object.entries({ q: query, format: 'jsonv2', limit: 6, namedetails: 1, 'accept-language': 'fi,en' })) {
         url.searchParams.set(key, value);
       }
+      if (countryCode) url.searchParams.set('countrycodes', countryCode.toLowerCase());
       const rows = await json(url);
       return rows.map(row => ({
         name: row.name || row.display_name.split(',')[0], label: row.display_name, lat: +row.lat, lon: +row.lon,
@@ -97,10 +101,10 @@ function remoteSearch(query) {
   }, 86400000);
 }
 
-async function search(query, ctx) {
-  const local = await localSearch(query, ctx);
+async function search(query, ctx, countryCode = '') {
+  const local = await localSearch(query, ctx, countryCode);
   try {
-    const remote = await remoteSearch(query);
+    const remote = await remoteSearch(query, countryCode);
     for (const hit of remote) {
       if (!hit.article || fold(hit.article) === fold(hit.name)) {
         const match = local.find(candidate => candidate.kind === hit.kind && distance(candidate, hit) < (hit.kind === 'country' ? 250000 : 8000));
@@ -156,13 +160,13 @@ async function articlesInLanguage(point, language) {
   return { main: main || null, nearby: nearby.filter(article => article.url !== main?.url).slice(0, 6) };
 }
 
-async function articles(point) {
-  const results = await Promise.allSettled(['fi', 'en'].map(language => articlesInLanguage(point, language)));
-  const [finnish, english] = results.map(result => result.value);
-  if (!finnish && !english) throw results[0].reason;
-  const main = finnish?.main || english?.main || null;
-  const seen = new Set([finnish?.main, english?.main].filter(Boolean).map(article => fold(article.title)));
-  const candidates = [...finnish?.nearby || [], ...english?.nearby || []].sort((a,b) => a.distance - b.distance);
+async function articles(point, language = 'fi') {
+  const results = await Promise.allSettled([language, language === 'fi' ? 'en' : 'fi'].map(lang => articlesInLanguage(point, lang)));
+  const [primary, fallback] = results.map(result => result.value);
+  if (!primary && !fallback) throw results[0].reason;
+  const main = primary?.main || fallback?.main || null;
+  const seen = new Set([primary?.main, fallback?.main].filter(Boolean).map(article => fold(article.title)));
+  const candidates = [...primary?.nearby || [], ...fallback?.nearby || []].sort((a,b) => a.distance - b.distance);
   const nearby = [];
   for (const article of candidates) {
     const key = fold(article.title);
@@ -198,14 +202,16 @@ function mediaCategory(context) {
   if (/\b(street|streets|buildings|building|architecture|roads|road|town|village|church|school|market|kauppa|koulu|raitti|keskusta|katu|kirkko|kyla|ilmakuva|aerial|landscape|maisema)\b/.test(words)) return 'places';
   return 'other';
 }
-function photo(page, point, radius, named = false) {
+function photo(page, point, radius, named = false, eras = false, photographTemplate = false, scope = null) {
   const info = page.imageinfo?.[0];
-  if (!info || !/^image\/(jpeg|png|webp)$/.test(info.mime)) return null;
+  if (!info || (!/^image\/(jpeg|png|webp)$/.test(info.mime) &&
+      !(eras && info.mime === 'image/tiff' && /\.jpe?g(?:\?|$)/i.test(info.thumburl || '')))) return null;
   const meta = key => plain(info.extmetadata?.[key]?.value);
   const license = meta('LicenseShortName');
   const licenseUrl = meta('LicenseUrl');
   const artist = meta('Artist');
-  const dates = meta('DateTimeOriginal');
+  const dateMetadata = String(info.extmetadata?.DateTimeOriginal?.value || '');
+  const dates = eras ? plain(dateMetadata.replace(/<div\b[^>]*>\s*date QS:[\s\S]*?<\/div>/gi, '')) : meta('DateTimeOriginal');
   const categories = meta('Categories');
   const title = page.title.replace(/^File:/, '').replace(/\.[^.]+$/, '');
   const description = meta('ImageDescription');
@@ -214,31 +220,39 @@ function photo(page, point, radius, named = false) {
   if (!artist && /^(CC BY(?:-SA)?\b)/i.test(license)) return null;
   if (/AI.generated|generated with (AI|Midjourney|DALL)|Photomontages created by AI/i.test(context)) return null;
   const points = (page.coordinates || []).filter(c => c.globe === 'earth' && Number.isFinite(c.lat) && Number.isFinite(c.lon));
-  const nearest = points.reduce((best, candidate) => {
+  const nearest = scope ? points[0] : points.reduce((best, candidate) => {
     const metres = distance(point, { lat:candidate.lat, lon:candidate.lon });
     return !best || metres < best.metres ? { lat:candidate.lat, lon:candidate.lon, metres } : best;
   }, null);
   // A title containing the place name is a useful lead, not verified geographic evidence.
-  const localName = fold(point.name).replace(/\s*,.*/, '');
-  const titleNamesPlace = localName.length >= 4 && fold(title).includes(localName);
-  if (named && !titleNamesPlace) return null;
-  if (!named && (!nearest || nearest.metres > radius)) return null;
+  const localNames = eras ? commonsNames(point) : [(point.name || '').split(',')[0]];
+  const titleNamesPlace = localNames.some(name => fold(name).length >= 4 && fold(title).includes(fold(name)));
+  const categoryNames = new Set(categories.split('|').map(value => fold(value).replace(/^\d{4} in /,'')));
+  const categoryNamesPlace = eras && localNames.some(name => categoryNames.has(fold(name)));
+  if (named && !titleNamesPlace && !categoryNamesPlace) return null;
+  if (scope ? nearest && scope.boundary && !withinCountry(nearest,scope.boundary)
+    : (eras && nearest && nearest.metres > 15000) || (!named && (!nearest || nearest.metres > radius))) return null;
   const src = info.thumburl || info.url;
   if (!/^https:\/\/(?:upload|thumb)\.wikimedia\.org\//.test(src) || !/^https:\/\/commons\.wikimedia\.org\//.test(info.descriptionurl)) return null;
   const years = [...new Set((dates.match(/\b(?:18|19|20)\d{2}\b/g) || []))];
   const exactYear = years.length === 1 && !/circa|\bc\.\s|between|before|after|unknown|or |vers|\?|\bca\./i.test(dates) ? Number(years[0]) : null;
   const category = mediaCategory(context);
   const isIllustration = /\b(drawing|illustration|painting|sketch|engraving|piirros|maalaus|kaiverrus)\b/i.test(context);
+  if (eras && (category === 'maps' || isIllustration ||
+      /\b(flag|logo|coat of arms|icon|screenshot|diagram|postage stamp|book cover|poster)\b/i.test(title) ||
+      !(photographTemplate || /photograph|\bphotos?\b|valokuva|negatiiv|flickr|geograph|daguerreotype|albumen/i.test(context)))) return null;
   const kind = category === 'maps' ? 'Kartta' : isIllustration ? 'Piirros tai kuvitus' : 'Kuva-aineisto';
-  const evidence = nearest && nearest.metres <= radius ? 'coordinates' : 'title';
+  const evidence = scope ? nearest ? 'coordinates' : scope.country ? 'category' : 'unknownPlace'
+    : nearest && nearest.metres <= radius ? 'coordinates' : categoryNamesPlace ? 'category' : 'title';
   return {
     title, artist: (artist || 'Tekijää ei ilmoitettu').slice(0, 300), license,
     licenseUrl: /^https:\/\//.test(licenseUrl) ? licenseUrl : '',
     src, url: info.descriptionurl, date:dates.slice(0, 95), year:exactYear,
-    distance:nearest ? Math.round(nearest.metres) : null,
+    distance:nearest && !scope ? Math.round(nearest.metres) : null,
     lat: evidence === 'coordinates' ? nearest?.lat : null, lon: evidence === 'coordinates' ? nearest?.lon : null,
     locationApprox:false, locationEvidence:evidence, category, kind,
-    restrictions:meta('Restrictions').slice(0, 150)
+    restrictions:meta('Restrictions').slice(0, 150),
+    ...(scope ? { locationHints:categoryLocations(categories), scopeCategory:scope.root } : {})
   };
 }
 
@@ -250,7 +264,55 @@ const archive = {
   date: '19.7.1952', year: 1952, lat:60.187, lon:24.927, locationApprox:true, distance:1500, category:'people', kind:'Valokuva', locationEvidence:'coordinates'
 };
 
-async function pictures(point) {
+// Museovirasto credits the collection and leaves the photographer field blank.
+// Each record describes the same border area and dates its own photograph to 1954.
+const punkalaidun1954 = [
+  '8132C068D723B68525B5EA74916A8C75','EF13583BAD7D1ABDBA6F1B13A107E2D4',
+  '3CE6AEB305936F127E87FFC0AACD53CB','89A512CA6F8C48D45A3FBFE818C7E303',
+  'FDCAC1FD3D78189262A3042C7F0ECB21'
+].map((id,index) => {
+  const record = 'museovirasto.'+id;
+  return {
+    title:'Ravustus Huittisten ja Punkalaitumen rajamailla · JOKAUAS2 2438:'+(index+1),
+    date:'1954', artist:'Museovirasto / JOKA Journalistinen kuva-arkisto / UA Saarisen kokoelma',
+    artistUnspecified:true, locationEvidence:'archive', license:'CC BY 4.0',
+    licenseUrl:'https://creativecommons.org/licenses/by/4.0/',
+    original:'https://www.finna.fi/Record/'+record,
+    url:'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(
+      'Crabbing has started on the borderland of Huittinen and Punkalaidun 1954 (JOKAUAS2 2438-'+(index+1)+').tif'),
+    src:'https://www.finna.fi/Cover/Show?source=Solr&id='+record+'&index=0&size=medium'
+  };
+});
+
+// Verified Geograph photographs with capture dates and camera coordinates on Commons.
+const londonArchive = [
+  ['London Tower Bridge, 1950','London Tower Bridge, 1950 geograph-3046604-by-Ben-Brooksbank.jpg','c/c8','1950-06-10',51.502833,-0.068028],
+  ['Northwards across London Bridge, 1949','Northwards across London Bridge, 1949 - geograph.org.uk - 4569486.jpg','0/07','1949-06-21',51.5062209,-0.08820284]
+].map(([title,file,folder,date,lat,lon])=>{
+  const name=encodeURIComponent(file.replaceAll(' ','_'));
+  return {
+    title,date,lat,lon,artist:'Ben Brooksbank',locationEvidence:'coordinates',
+    license:'CC BY-SA 2.0',licenseUrl:'https://creativecommons.org/licenses/by-sa/2.0/',
+    url:'https://commons.wikimedia.org/wiki/File:'+name,
+    src:`https://thumb.wikimedia.org/wikipedia/commons/thumb/${folder}/${name}/960px-${name}`
+  };
+});
+
+function mergeArchive(photos, archiveRecords) {
+  const key = url => {
+    try { return decodeURIComponent(url).replaceAll('_',' '); }
+    catch { return url; }
+  };
+  const known = new Set(archiveRecords.map(record=>key(record.url)));
+  return [...archiveRecords,...photos.filter(photo=>!known.has(key(photo.url)))];
+}
+
+function commonsNames(point) {
+  const names = unique([point.alias, point.name, point.article].map(name => name?.split(',')[0].trim()));
+  return names.filter(name => name.length >= 4 && name.length <= 45 && /^[\p{L}\p{N}\s\-']+$/u.test(name));
+}
+
+async function pictures(point, eras = false, period = null) {
   const radius = point.kind === 'country' ? 2500 : 5000;
   if (Math.abs(point.lat) >= 89.99) return [];
   const host = 'commons.wikimedia.org';
@@ -259,22 +321,33 @@ async function pictures(point) {
     wiki(host, { ...geo(point, radius, 48, 6), ggsprimary:'all', ...mediaProps })
   ];
   // Also look for source files whose titles mention the place, even if they lack geo tags.
-  const placeName = (point.name || '').split(',')[0].trim();
-  if (point.kind !== 'country' && placeName.length >= 4 && placeName.length <= 45
-      && !/[^\p{L}\p{N}\s\-']/u.test(placeName)) {
+  const names = commonsNames(eras ? point : {name:point.name});
+  if (point.kind !== 'country' && names.length) {
+    const title = 'intitle:"'+names[0]+'"';
     requests.push(wiki(host, {
       generator:'search', gsrnamespace:6, gsrlimit:30,
-      gsrsearch:'intitle:"' + placeName + '" filetype:bitmap',
+      gsrsearch:title+' filetype:bitmap',
+      ...mediaProps
+    }));
+    if (eras) requests.push(wiki(host, {
+      generator:'search', gsrnamespace:6, gsrlimit:48,
+      gsrsearch:title+' filetype:bitmap hastemplate:Photograph',
       ...mediaProps
     }));
   }
+  if (eras) requests.push(wiki(host, {
+    generator:'search', gsrnamespace:6, gsrlimit:40,
+    gsrsearch:`nearcoord:5km,${point.lat},${point.lon} filetype:bitmap ${period ? 'deepcat:"'+period.year+(period.decade?'s':'')+' photographs"' : 'hastemplate:Photograph'}`,
+    ...mediaProps
+  }));
   const settled = await Promise.allSettled(requests);
   if (settled.every(r => r.status === 'rejected')) throw new Error('Wikimedia Commons ei vastannut.');
   const imageBySource = new Map();
   settled.forEach((result, sourceIndex) => {
     if (result.status !== 'fulfilled') return;
     for (const page of result.value) {
-      const image = photo(page, point, radius, sourceIndex > 0);
+      const archiveSearch = eras && sourceIndex === requests.length-1;
+      const image = photo(page, point, radius, sourceIndex > 0 && !archiveSearch, eras, archiveSearch || (eras && names.length > 0 && sourceIndex === 2));
       if (!image) continue;
       const previous = imageBySource.get(image.url);
       // Prefer verified coordinates if another search found the same photo without them.
@@ -283,6 +356,7 @@ async function pictures(point) {
       }
     }
   });
+  if (eras) return { photos:[...imageBySource.values()], requests:requests.length, succeeded:settled.filter(r=>r.status === 'fulfilled').length };
   const selectedYear = point.year;
   const score = image => {
     const yearGap = selectedYear == null || image.year == null ? null : Math.abs(selectedYear - image.year);
@@ -307,6 +381,185 @@ async function place(point) {
   return {
     demo, photos: demo ? [archive, ...photos.filter(image => image.url !== archive.url)].slice(0, 24) : photos,
     wiki: wikiResult.value || { main: null, nearby: [] }, availability: { wiki: wikiResult.status === 'fulfilled', photos: commonsResult.status === 'fulfilled' }
+  };
+}
+
+// Capture dates only. A date in a title, upload record or Wikipedia article is never input.
+function captureDate(raw) {
+  const value = raw.trim();
+  const unknown = { precision:'unknown', start:null, end:null };
+  const valid = year => year >= 1826 && year <= new Date().getUTCFullYear();
+  const date = value.replace(/^taken on\s+/i,'');
+  const months = '(?:January|February|March|April|May|June|July|August|September|October|November|December)';
+  const textDate = new RegExp('^(?:\\d{1,2} )?'+months+' (\\d{4})$|^'+months+' \\d{1,2}, (\\d{4})$','i');
+  const monthMatch = date.match(textDate);
+  const exact = date.match(/^(\d{4})(?:[-:]\d{2}(?:[-:]\d{2})?(?:[ T]\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})?)?)?$/) ||
+    date.match(/^\d{1,2}\.\d{1,2}\.(\d{4})$/) ||
+    (monthMatch && [date,monthMatch[1] || monthMatch[2]]);
+  if (exact && valid(+exact[1])) return { precision:'exact', start:+exact[1], end:+exact[1] };
+  const decade = value.match(/^(\d{3})0\s*(?:s|[-– ]?luku(?:a|lla)?)$/i);
+  if (decade && valid(+decade[1]*10)) return { precision:'approximate', start:+decade[1]*10, end:Math.min(+decade[1]*10+9,new Date().getUTCFullYear()) };
+  const range = value.match(/^(?:between\s+)?(\d{4})\s*(?:[–—/-]|and|to)\s*(\d{4})$/i);
+  if (range && valid(+range[1]) && valid(+range[2]) && +range[1]<=+range[2]) return { precision:'approximate', start:+range[1], end:+range[2] };
+  const circa = value.match(/^(?:circa|approx\.?|around|ca\.?|c\.|noin|n\.|vers)\s*(\d{4})$/i);
+  if (circa && valid(+circa[1])) return { precision:'approximate', start:+circa[1], end:+circa[1], uncertain:true };
+  return unknown;
+}
+
+function datedResults(media, period) {
+  const photos = media.map(image => ({ ...image, capture:captureDate(image.date) }))
+    .filter(image=>inPeriod(image.capture,period));
+  const counts = new Map();
+  for (const image of photos) {
+    const { precision,start,end,uncertain } = image.capture;
+    const decade = Math.floor(start/10)*10;
+    if (image.locationEvidence === 'title'||precision === 'unknown'||uncertain||end>=decade+10) continue;
+    const count = counts.get(decade) || { decade, exact:0, approximate:0 };
+    count[precision]++;
+    counts.set(decade,count);
+  }
+  return { photos,decades:[...counts.values()].sort((a,b)=>a.decade-b.decade) };
+}
+
+async function eras(point, language, period) {
+  const key = JSON.stringify(point);
+  const started = Date.now();
+  const [history, wikiData] = await Promise.allSettled([
+    cached(`era-media:${key}:${period?.year || ''}:${period?.decade || false}`, () => pictures(point, true, period)),
+    eraWiki(point, language)
+  ]);
+  let media = [...history.value?.photos || []];
+  if (/^punkalaidun$/i.test(point.name) && distance(point,{lat:61.1158,lon:23.0994})<=15000) {
+    media = mergeArchive(media,punkalaidun1954);
+  }
+  if (commonsNames(point).some(name=>/^(london|lontoo|greater london)$/i.test(name))) {
+    media = mergeArchive(media,londonArchive.filter(record=>distance(point,record)<=5000));
+  }
+  if (distance(point, helsinki) <= 3000 && /^(helsinki|helsingfors)$/i.test(point.name)) {
+    const index = media.findIndex(image => image.url === archive.url);
+    const record = { ...archive, src:'/time-jump/' + archive.src, date:'1952-07-19' };
+    if (index >= 0) media.splice(index, 1);
+    const market = [
+      ['Kolera-allas, Kauppatori','Arvo Kajantie','kolera-allas.webp','1950–1959','hkm.87455276-66CB-47DF-98AF-DF2A3EA7C062'],
+      ['Kaupungintalo ja Kauppatori','Börje Dilén','kaupungintalo-1952.webp','1952','hkm.429E061A-83E3-4F8C-AFE2-AACC8CA07B86']
+    ].map(([title, artist, file, date, id])=>({
+      title,artist:artist+' / Helsingin kaupunginmuseo',date,locationEvidence:'archive',
+      src:'/time-jump/helsinki-1952-photo/'+file, original:'https://www.finna.fi/Record/'+id,
+      license:'Public Domain Mark',licenseUrl:'https://creativecommons.org/publicdomain/mark/1.0/'
+    }));
+    media.unshift(record,...market);
+  }
+  return {
+    ...datedResults(media,period),
+    wiki:wikiData.value || { main:null, nearby:[] },
+    availability:{ photos:history.status==='fulfilled', wiki:wikiData.status==='fulfilled' },
+    diagnostics:{ commonsBatches:history.value?.requests ?? 0, succeeded:history.value?.succeeded ?? 0, serverMs:Date.now()-started }
+  };
+}
+
+function eraWiki(point, language) {
+  const { alias, ...wikiPoint } = point;
+  return cached(`era-wiki:${language}:${JSON.stringify(wikiPoint)}`, () => articles(wikiPoint, language));
+}
+
+let boundaries;
+function withinCountry({lon,lat}, geometry) {
+  const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
+  const ringContains = ring => {
+    let inside = false;
+    for (let i=0,j=ring.length-1;i<ring.length;j=i++) {
+      const [x,y]=ring[i], [px,py]=ring[j];
+      if ((y>lat)!==(py>lat) && lon<(px-x)*(lat-y)/(py-y)+x) inside=!inside;
+    }
+    return inside;
+  };
+  return polygons.some(([outer,...holes])=>ringContains(outer)&&!holes.some(ringContains));
+}
+
+function categoryLocations(categories) {
+  return categories.split('|').flatMap(value => {
+    const match = value.match(/^\d{4}s? in (.+)$/i) || value.match(/^(.+?) in (?:the )?\d{4}s?$/i);
+    return match && /^[\p{L}][\p{L} .'-]{1,56}$/u.test(match[1]) &&
+      !/\b(?:in|by|of)\b/i.test(match[1].replace(/^the /i,'')) ? [match[1]] : [];
+  });
+}
+
+let regionCityLabels;
+async function labelRegionalPhotos(photos,code,country,ctx) {
+  await ensureCountries(ctx);
+  if (!regionCityLabels) regionCityLabels = assetJson(ctx,'era-city-labels.json').catch(error=>{regionCityLabels=null;throw error;});
+  const cities = await regionCityLabels;
+  const regionKeys = new Map();
+  for (const [id, labels] of countryLabels) {
+    for (const label of labels) regionKeys.set(fold(label),id);
+  }
+  // The site's boundaries are modern. Do not include wartime photos explicitly classified in the Russian oblast.
+  if (code==='FI') regionKeys.set('leningrad oblast','RU');
+  return photos.flatMap(({locationHints,...image})=>{
+    const locations = locationHints.flatMap(label=>{
+      const key = fold(label);
+      const region = regionKeys.get(key);
+      const codes = region ? [region] : Object.hasOwn(cities,key) ? cities[key] : [];
+      return codes.length ? [{label,codes}] : [];
+    });
+    const place = locations.find(({label,codes})=>(!code || codes.includes(code)) && fold(label)!==fold(country.replace(/^the /,'')));
+    const conflict = locations.some(({codes})=>!codes.includes(code));
+    if (code && image.locationEvidence!=='coordinates' && !place && conflict) return [];
+    return [{...image,placeLabel:place?.label || country.replace(/^the /,''),
+      locationEvidence:place && image.locationEvidence==='unknownPlace' ? 'category' : image.locationEvidence}];
+  });
+}
+
+function categoryRoots(country,period) {
+  if (!country) return [period.year+(period.decade?'s':'')+' photographs'];
+  if (period) {
+    const time=period.year+(period.decade?'s':'');
+    return [time+' photographs of '+country,
+      period.decade ? country.replace(/^the /,'')+' in the '+time : time+' in '+country];
+  }
+  return ['Photographs of '+country,...[1930,1950,1970].map(year=>year+'s photographs of '+country)];
+}
+
+async function regionalPhotos(code,period,ctx) {
+  const country = code ? (['GB','US','NL','PH','AE'].includes(code) ? 'the ' : '') + (englishRegions.of(code) || '') : '';
+  const roots = categoryRoots(country,period);
+  let boundary;
+  if (code) {
+    if (!boundaries) boundaries = assetJson(ctx,'world.json').catch(error=>{boundaries=null; throw error;});
+    const world = await boundaries;
+    boundary = world.features.find(feature=>feature.properties.code===code)?.geometry;
+  }
+  const batches = await Promise.allSettled(roots.map((root,index)=>wiki('commons.wikimedia.org',{
+    generator:'search',gsrnamespace:6,gsrlimit:period ? 36 : 24,
+    gsrsearch:`deepcat:"${root}" filetype:bitmap${index===0 && country && period?'':' hastemplate:Photograph'}`,
+    ...mediaProps
+  }).then(pages=>pages.map(page=>photo(page,{name:''},0,false,true,true,{country,boundary,root})).filter(Boolean))));
+  const photos = new Map();
+  const available = batches.filter(batch=>batch.status==='fulfilled').map(batch=>batch.value);
+  for (let index=0;index<Math.max(0,...available.map(batch=>batch.length));index++) {
+    for (const batch of available) {
+      const item=batch[index];
+      if(item)photos.set(item.url,item);
+    }
+  }
+  return { photos:await labelRegionalPhotos([...photos.values()],code,country,ctx), requested:roots.length, succeeded:available.length };
+}
+
+function regionArchive(code) {
+  const finland = [...punkalaidun1954.map(item=>({...item,placeLabel:'Huittinen / Punkalaidun'})),
+    {...archive, src:'/time-jump/'+archive.src, date:'1952-07-19', placeLabel:'Helsinki',locationEvidence:'archive'}];
+  const britain = londonArchive.map(item=>({...item,placeLabel:'London'}));
+  return code==='FI' ? finland : code==='GB' ? britain : !code ? [...finland,...britain] : [];
+}
+
+async function regionalEras(code,period,ctx) {
+  const started=Date.now();
+  const media=await cached(`era-region:${code}:${period?.year || ''}:${period?.decade || false}`,()=>regionalPhotos(code,period,ctx));
+  return {
+    ...datedResults(mergeArchive(media.photos,regionArchive(code)),period),
+    wiki:{main:null,nearby:[]},
+    availability:{photos:media.succeeded>0,wiki:false},
+    diagnostics:{commonsBatches:media.requested,succeeded:media.succeeded,serverMs:Date.now()-started}
   };
 }
 
@@ -338,7 +591,24 @@ export async function onRequest(ctx) {
     if(route==='search') {
       const q=(url.searchParams.get('q')||'').trim();
       if(q.length<2||q.length>140)return respond({error:'Anna 2–140 merkkiä.'},400);
-      return respond(await search(q,ctx));
+      const country = (url.searchParams.get('country') || '').toUpperCase();
+      if(country && !/^[A-Z]{2}$/.test(country))return respond({error:'Virheellinen maatunnus.'},400);
+      return respond(await search(q,ctx,country));
+    }
+    if(route==='eras' || route==='era-wiki') {
+      let period;
+      try { period = parsePeriod(url.searchParams.get('period') || ''); }
+      catch { return respond({error:'Virheellinen aikarajaus.'},400); }
+      const code = (url.searchParams.get('country') || '').toUpperCase();
+      if (code && (!/^[A-Z]{2}$/.test(code)||!englishRegions.of(code)))return respond({error:'Virheellinen maatunnus.'},400);
+      if (route==='eras' && !url.searchParams.has('lat') && !url.searchParams.has('lon') && (code || period)) {
+        return respond(await regionalEras(code,period,ctx));
+      }
+      const point=parsePoint(url.searchParams);
+      if(!point || !point.name || point.kind==='country')return respond({error:'Valitse paikka.'},400);
+      const language = url.searchParams.get('lang')==='en'?'en':'fi';
+      if(route==='era-wiki')return respond(await eraWiki({ ...point, year:null },language));
+      return respond(await eras({ ...point, alias:(url.searchParams.get('alias') || '').slice(0,45), year:null },language,period));
     }
     if(route==='place') {
       const p=parsePoint(url.searchParams);
