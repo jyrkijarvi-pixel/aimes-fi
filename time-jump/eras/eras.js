@@ -1,28 +1,30 @@
-'use strict';
+import { parsePeriod } from './period.js';
 
 const labels = {
   fi: {
-    home:'Kartta ja paikkahaku',title:'Historialliset aikakaudet',intro:'Valitse maa ja etsi paikka. AIMES ehdottaa vuosikymmeniä löytyneiden valokuvien ajoitustiedoista.',
-    country:'Maa',place:'Paikka',find:'Hae paikka',choose:'Valitse maa',decade:'Vuosikymmen',precision:'Ajoitustarkkuus',
-    scope:'Vuosikymmenet perustuvat koordinaatteihin, Commonsin paikkaluokkaan tai arkistotietueeseen. Pelkkä otsikko-osuma ei vaikuta ehdotuksiin.',
+    home:'Kartta ja paikkahaku',title:'Historialliset aikakaudet',intro:'Hae historiallisia valokuvia maan, paikan tai ajan mukaan. Yksi rajaus riittää.',
+    country:'Maa tai alue',place:'Paikkakunta (valinnainen)',period:'Vuosi tai vuosikymmen',periodExample:'1952 tai 1950-luku',find:'Hae',choose:'Kaikki maat',decade:'Vuosikymmen',precision:'Ajoitustarkkuus',location:'Sijainti aineistossa',more:'Näytä lisää',
+    guide:'Aloita esimerkiksi valitsemalla Suomi tai kirjoittamalla vuosikymmen 1950-luku.',invalidPeriod:'Anna vuosi tai vuosikymmen, esimerkiksi 1952 tai 1950-luku.',
+    scope:'Rajattu aineistohaku. Ehdotukset perustuvat kuville ilmoitettuun kuvausaikaan ja saatavilla olevaan paikkatietoon. Kaikki arkistokuvat eivät sisälly hakuun.',
     includeUncertain:'Näytä myös vahvistamattomat otsikko-osumat',noDecades:'Tästä hausta ei löytynyt kuvia, jotka tukisivat tiettyä vuosikymmentä.',
     all:'Kaikki löydöt',exact:'Tarkasti ajoitettu',approximate:'Likimääräisesti ajoitettu',unknown:'Ajoittamaton',
     searching:'Haetaan…',loading:'Etsitään valokuvia ja Wikipedia-tietoja…',noPlaces:'Paikkaa ei löytynyt. Kokeile toista nimeä.',failed:'Haku epäonnistui. Yritä uudelleen.',
     noPhotos:'Tällä rajauksella ei löytynyt valokuvia.',photoFailed:'Commons-haku ei vastannut. Paikallinen arkistoaineisto näkyy, jos sitä on.',
     imageFailed:'Kuva ei latautunut. Voit avata lähdesivun.',notDated:'Lähde ei ilmoita tunnistettavaa kuvausaikaa.',photoSource:'Avaa kuvan lähde',license:'Käyttöoikeus',
-    artistUnknown:'Tekijää ei ilmoitettu',coordinates:'Sijaintiyhteys: Commonsin koordinaatit.',titleMatch:'Sijaintiyhteys: tiedoston otsikko. Sijaintia ei ole vahvistettu.',archive:'Sijaintiyhteys: arkistotietue.',category:'Sijaintiyhteys: Commonsin paikkaluokka.',
+    artistUnknown:'Tekijää ei ilmoitettu',coordinates:'Sijaintiyhteys: Commonsin koordinaatit.',titleMatch:'Sijaintiyhteys: tiedoston otsikko. Sijaintia ei ole vahvistettu.',archive:'Sijaintiyhteys: arkistotietue.',category:'Sijaintiyhteys: Commonsin paikkaluokka.',unknownPlace:'Kuvauspaikkaa ei voitu vahvistaa.',sourceCategory:'Commonsin hakuluokka',
     wikiMissing:'Tälle paikalle ei löytynyt Wikipedia-tietoja.',wikiFailed:'Wikipedia ei vastannut.',nearby:'Lähikohteita Wikipediassa',count:'kuvaa',estimate:'likimääräistä',dated:'tarkkaa',partial:'Osa Commonsin hauista epäonnistui. Löydöt ovat osittaisia.'
   },
   en: {
-    home:'Map and place search',title:'Historical eras',intro:'Choose a country and find a place. AIMES suggests decades based on dates found in the photograph metadata.',
-    country:'Country',place:'Place',find:'Find a place',choose:'Choose a country',decade:'Decade',precision:'Dating precision',
-    scope:'Decades are based on coordinates, a Commons place category or an archive record. Filename-only matches do not affect suggestions.',
+    home:'Map and place search',title:'Historical eras',intro:'Find photographs by country, place or time. One search field is enough.',
+    country:'Country or area',place:'Place (optional)',period:'Year or decade',periodExample:'1952 or 1950s',find:'Search',choose:'All countries',decade:'Decade',precision:'Dating precision',location:'Location in the source',more:'Show more',
+    guide:'Start by selecting Finland or typing a decade such as 1950s.',invalidPeriod:'Enter a year or decade, such as 1952 or 1950s.',
+    scope:'This search covers a limited sample. Suggestions use the declared capture date and available location evidence. The search does not include every archive photograph.',
     includeUncertain:'Include unverified filename matches',noDecades:'This search found no photographs that substantiate a specific decade.',
     all:'All finds',exact:'Precisely dated',approximate:'Approximately dated',unknown:'Undated',
     searching:'Searching…',loading:'Searching for photographs and Wikipedia information…',noPlaces:'No place found. Try another name.',failed:'The request failed. Try again.',
     noPhotos:'No photographs match these filters.',photoFailed:'Commons did not respond. Local archive material is shown where available.',
     imageFailed:'The image could not be loaded. You can open its source page.',notDated:'The source has no recognizable capture date.',photoSource:'Open photo source',license:'Usage rights',
-    artistUnknown:'Artist not provided',coordinates:'Location evidence: Commons coordinates.',titleMatch:'Location evidence: filename. The location is unverified.',archive:'Location evidence: archive record.',category:'Location evidence: Commons place category.',
+    artistUnknown:'Artist not provided',coordinates:'Location evidence: Commons coordinates.',titleMatch:'Location evidence: filename. The location is unverified.',archive:'Location evidence: archive record.',category:'Location evidence: Commons place category.',unknownPlace:'The location could not be verified.',sourceCategory:'Commons search category',
     wikiMissing:'No Wikipedia information found for this place.',wikiFailed:'Wikipedia did not respond.',nearby:'Nearby in Wikipedia',count:'photos',estimate:'approximate',dated:'precise',partial:'Some Commons searches failed. These results are incomplete.'
   }
 };
@@ -31,16 +33,22 @@ const endpoint = '/time-jump/api/';
 const country = byId('country');
 const decade = byId('decade');
 const precision = byId('precision');
+const locationFilter = byId('location');
+const periodInput = byId('period');
+const batchSize = 18;
 let language = new URL(location.href).searchParams.get('lang') === 'en' ? 'en' : 'fi';
 let countries = [];
 let place;
 let data;
 let request;
+let region;
+let visibleLimit = batchSize;
+let statusKey;
 const t = key => labels[language][key];
 const text = (tag, value) => Object.assign(document.createElement(tag),{textContent:value});
 const option = (value, label) => Object.assign(text('option',label),{value});
 const link = (label, url) => Object.assign(text('a',label),{href:url});
-const setStatus = key => { byId('status').textContent = key ? t(key) : ''; };
+const setStatus = key => { statusKey = key; byId('status').textContent = key ? t(key) : ''; };
 function renderCountries() {
   const previous = country.value;
   const names = new Intl.DisplayNames([language],{type:'region'});
@@ -56,6 +64,7 @@ function setLanguage() {
   const toggle = byId('language');
   toggle.textContent = language === 'fi' ? 'English' : 'Suomi';
   toggle.lang = language === 'fi' ? 'en' : 'fi';
+  periodInput.placeholder=t('periodExample');
   renderCountries();
 }
 async function api(route, parameters, signal) {
@@ -71,6 +80,7 @@ function start() {
 function renderWiki() {
   const wiki = byId('wiki');
   wiki.replaceChildren();
+  if (region) return;
   const article = data.wiki.main;
   if (article) {
     const languageName = article.language === 'fi' ? 'Suomi' : 'English';
@@ -98,6 +108,12 @@ function renderFilters() {
   precision.replaceChildren(...['all','exact','approximate','unknown'].map(key=>option(key,t(key))));
   if([...decade.options].some(item=>item.value===selectedDecade))decade.value=selectedDecade;
   precision.value = selectedPrecision || 'all';
+  const selectedLocation=locationFilter.value;
+  const locations=[...new Set(data.photos.map(image=>image.placeLabel).filter(Boolean))].sort((a,b)=>a.localeCompare(b,language));
+  locationFilter.replaceChildren(option('',t('all')),...locations.map(name=>option(name,name)));
+  if(locations.includes(selectedLocation))locationFilter.value=selectedLocation;
+  byId('location-filter').hidden = locations.length < 2;
+  byId('include-uncertain').closest('label').hidden = !data.photos.some(image=>image.locationEvidence==='title');
 }
 function photoCard(image) {
   const figure = text('figure','');
@@ -116,6 +132,9 @@ function photoCard(image) {
   caption.append(text('strong',image.title),text('small',artist),
     text('small',t(image.capture.precision)+(image.date?' · '+image.date:' · '+t('notDated'))),
     text('small',t(image.locationEvidence==='title'?'titleMatch':image.locationEvidence)));
+  if(image.placeLabel)caption.append(text('small',image.placeLabel));
+  if(image.lat!=null && image.lon!=null)caption.append(text('small',image.lat.toFixed(4)+', '+image.lon.toFixed(4)));
+  if(image.scopeCategory)caption.append(link(t('sourceCategory'), 'https://commons.wikimedia.org/wiki/Category:'+encodeURIComponent(image.scopeCategory)));
   if(image.restrictions)caption.append(text('small',image.restrictions));
   const source = text('small','');
   source.append(link(t('photoSource'),image.original || image.url),document.createTextNode(' · '+t('license')+' '),
@@ -126,31 +145,43 @@ function photoCard(image) {
 }
 function renderPhotos() {
   const chosen = decade.value ? Number(decade.value) : null;
-  const photos = data.photos.filter(({capture,locationEvidence})=>
+  const photos = data.photos.filter(({capture,locationEvidence,placeLabel})=>
+    (!locationFilter.value||locationFilter.value===placeLabel) &&
     (locationEvidence!=='title'||byId('include-uncertain').checked) &&
     (precision.value==='all'||precision.value===capture.precision) &&
     (chosen===null||(!capture.uncertain&&capture.start!==null&&capture.start>=chosen&&capture.end<chosen+10)));
   byId('count').textContent = photos.length ? photos.length+' '+t('count')+(!data.decades.length?' · '+t('noDecades'):'') : t('noPhotos');
-  byId('photos').replaceChildren(...photos.map(photoCard));
+  byId('photos').replaceChildren(...photos.slice(0,visibleLimit).map(photoCard));
+  byId('more').hidden=photos.length<=visibleLimit;
+}
+function resetFilters() {
+  decade.replaceChildren();
+  precision.replaceChildren();
+  locationFilter.replaceChildren();
+  byId('include-uncertain').checked=false;
+  visibleLimit=batchSize;
+}
+function showResults() {
+  const title=region ? (region.country ? new Intl.DisplayNames([language],{type:'region'}).of(region.country) : t('choose')) : place.label;
+  const period=region?.period || place?.period;
+  byId('place-name').textContent=title+(period?' · '+period:'');
+  renderWiki(); renderFilters(); renderPhotos();
+  byId('destination').hidden=false;
+  setStatus(!data.availability.photos?'photoFailed':data.diagnostics.succeeded<data.diagnostics.commonsBatches?'partial':'');
 }
 async function loadPlace(selected, keepFilters = false) {
   place = selected;
+  region = null;
   const signal = start();
   setStatus('loading');
   byId('places').replaceChildren();
   byId('destination').hidden = true;
-  if (!keepFilters) {
-    decade.replaceChildren();
-    precision.replaceChildren();
-  }
+  if (!keepFilters) resetFilters();
   try {
-    const response = await api('eras',{lat:place.lat,lon:place.lon,name:place.name,article:place.article||'',alias:place.alias,lang:language},signal);
+    const response = await api('eras',{lat:place.lat,lon:place.lon,name:place.name,article:place.article||'',alias:place.alias,period:place.period,lang:language},signal);
     if(signal.aborted)return;
     data=response;
-    byId('place-name').textContent=selected.label;
-    renderWiki(); renderFilters(); renderPhotos();
-    byId('destination').hidden=false;
-    setStatus(!data.availability.photos?'photoFailed':data.diagnostics.succeeded<data.diagnostics.commonsBatches?'partial':'');
+    showResults();
   } catch {
     if(!signal.aborted)setStatus('failed');
   }
@@ -175,19 +206,33 @@ byId('search').addEventListener('submit',async event=>{
   event.preventDefault();
   const signal=start();
   const q=byId('query').value.trim();
+  const period=periodInput.value.trim();
+  const code=country.value;
   place=null;
+  region=null;
   data=null;
   byId('destination').hidden=true;
   byId('places').replaceChildren();
+  try { parsePeriod(period); } catch {setStatus('invalidPeriod');periodInput.focus();return;}
+  if(!q && !code && !period){setStatus('guide');return;}
   setStatus('searching');
   try {
-    const response=await api('search',{q,country:country.value},signal);
+    if(!q) {
+      const response=await api('eras',{country:code,period},signal);
+      if(signal.aborted)return;
+      region={country:code,period};
+      data=response;
+      resetFilters();
+      showResults();
+      return;
+    }
+    const response=await api('search',{q,country:code},signal);
     if(signal.aborted)return;
     for(const hit of response.results.filter(item=>item.kind!=='country')) {
       const item=text('li','');
       const button=text('button',hit.label);
       button.type='button';
-      button.addEventListener('click',()=>loadPlace({ ...hit, alias:q }));
+      button.addEventListener('click',()=>loadPlace({ ...hit, alias:q, period }));
       item.append(button);
       byId('places').append(item);
     }
@@ -208,15 +253,22 @@ byId('language').addEventListener('click',()=>{
     setStatus(!data.availability.photos?'photoFailed':data.diagnostics.succeeded<data.diagnostics.commonsBatches?'partial':'');
     changeWiki();
   } else if (place) loadPlace(place,true);
+  else if (region && data) showResults();
+  else setStatus(statusKey);
 });
 decade.addEventListener('change',()=>{
   precision.value='all';
+  visibleLimit=batchSize;
   renderPhotos();
 });
-precision.addEventListener('change',()=>renderPhotos());
-byId('include-uncertain').addEventListener('change',()=>renderPhotos());
+for (const filter of [precision,locationFilter,byId('include-uncertain')])filter.addEventListener('change',()=>{
+  visibleLimit=batchSize;
+  renderPhotos();
+});
+byId('more').addEventListener('click',()=>{visibleLimit+=batchSize;renderPhotos();});
 byId('query').value=(new URL(location.href).searchParams.get('q') || '').slice(0,120);
 setLanguage();
+setStatus('guide');
 fetch('countries.json').then(res=>{
   if(!res.ok)throw Error(res.status);
   return res.json();

@@ -7,7 +7,7 @@
 <title>AIMES · Historialliset aikakaudet</title>
 <link rel="stylesheet" href="../style.css">
 <link rel="stylesheet" href="eras.css">
-<script defer src="eras.js"></script>
+<script type="module" src="eras.js"></script>
 </head>
 <body>
 <header class="top"><a class="brand" href="/">AIMES</a><a href="/" data-ui="home">Kartta ja paikkahaku</a><button class="outline" type="button" id="language" lang="en">English</button></header>
@@ -15,9 +15,10 @@
   <h1 data-ui="title">Historialliset aikakaudet</h1>
   <p class="intro" data-ui="intro">Valitse maa ja etsi paikka. AIMES ehdottaa vuosikymmeniä löytyneiden valokuvien ajoitustiedoista.</p>
   <form id="search" class="era-search">
-    <div><label for="country" data-ui="country">Maa</label><select id="country" required><option value="">Valitse maa</option></select></div>
-    <div><label for="query" data-ui="place">Paikka</label><input id="query" required minlength="2" maxlength="120" placeholder="Punkalaidun"></div>
-    <button class="primary" type="submit" data-ui="find">Hae paikka</button>
+    <div><label for="country" data-ui="country">Maa tai alue</label><select id="country"><option value="">Kaikki maat</option></select></div>
+    <div><label for="query" data-ui="place">Paikkakunta (valinnainen)</label><input id="query" minlength="2" maxlength="120" placeholder="Punkalaidun"></div>
+    <div><label for="period" data-ui="period">Vuosi tai vuosikymmen</label><input id="period" maxlength="15" placeholder="1952 tai 1950-luku"></div>
+    <button class="primary" type="submit" data-ui="find">Hae</button>
   </form>
   <p id="status" class="status" role="status"></p>
   <ul id="places" class="results"></ul>
@@ -27,11 +28,13 @@
     <form class="filters">
       <div><label for="decade" data-ui="decade">Vuosikymmen</label><select id="decade"></select></div>
       <div><label for="precision" data-ui="precision">Ajoitustarkkuus</label><select id="precision"></select></div>
+      <div id="location-filter" hidden><label for="location" data-ui="location">Sijainti aineistossa</label><select id="location"></select></div>
       <label class="era-evidence"><input id="include-uncertain" type="checkbox"> <span data-ui="includeUncertain">Näytä myös vahvistamattomat otsikko-osumat</span></label>
     </form>
     <p class="fine" data-ui="scope">Ehdotukset kuvaavat tämän haun löydöksiä. Kuvien sijainti voi perustua koordinaatteihin tai paikannimeen tiedoston otsikossa.</p>
     <p id="count" role="status"></p>
     <div id="photos" class="era-photos"></div>
+    <button id="more" type="button" class="outline" data-ui="more" hidden>Näytä lisää</button>
   </section>
 </main>
 </body>
