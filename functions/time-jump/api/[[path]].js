@@ -252,7 +252,7 @@ function photo(page, point, radius, named = false, eras = false, photographTempl
     lat: evidence === 'coordinates' ? nearest?.lat : null, lon: evidence === 'coordinates' ? nearest?.lon : null,
     locationApprox:false, locationEvidence:evidence, category, kind,
     restrictions:meta('Restrictions').slice(0, 150),
-    ...(scope ? { placeLabel:categoryLocation(categories,scope), scopeCategory:scope.root } : {})
+    ...(scope ? { locationHints:categoryLocations(categories), scopeCategory:scope.root } : {})
   };
 }
 
@@ -476,13 +476,38 @@ function withinCountry({lon,lat}, geometry) {
   return polygons.some(([outer,...holes])=>ringContains(outer)&&!holes.some(ringContains));
 }
 
-function categoryLocation(categories,scope) {
-  const hints = categories.split('|').flatMap(value => {
+function categoryLocations(categories) {
+  return categories.split('|').flatMap(value => {
     const match = value.match(/^\d{4}s? in (.+)$/i) || value.match(/^(.+?) in (?:the )?\d{4}s?$/i);
     return match && /^[\p{L}][\p{L} .'-]{1,56}$/u.test(match[1]) &&
       !/\b(?:in|by|of)\b/i.test(match[1].replace(/^the /i,'')) ? [match[1]] : [];
   });
-  return hints.find(hint=>fold(hint)!==fold(scope.country?.replace(/^the /,''))) || scope.country?.replace(/^the /,'') || '';
+}
+
+let regionCityLabels;
+async function labelRegionalPhotos(photos,code,country,ctx) {
+  await ensureCountries(ctx);
+  if (!regionCityLabels) regionCityLabels = assetJson(ctx,'era-city-labels.json').catch(error=>{regionCityLabels=null;throw error;});
+  const cities = await regionCityLabels;
+  const regionKeys = new Map();
+  for (const [id, labels] of countryLabels) {
+    for (const label of labels) regionKeys.set(fold(label),id);
+  }
+  // The site's boundaries are modern. Do not include wartime photos explicitly classified in the Russian oblast.
+  if (code==='FI') regionKeys.set('leningrad oblast','RU');
+  return photos.flatMap(({locationHints,...image})=>{
+    const locations = locationHints.flatMap(label=>{
+      const key = fold(label);
+      const region = regionKeys.get(key);
+      const codes = region ? [region] : Object.hasOwn(cities,key) ? cities[key] : [];
+      return codes.length ? [{label,codes}] : [];
+    });
+    const place = locations.find(({label,codes})=>(!code || codes.includes(code)) && fold(label)!==fold(country.replace(/^the /,'')));
+    const conflict = locations.some(({codes})=>!codes.includes(code));
+    if (code && image.locationEvidence!=='coordinates' && !place && conflict) return [];
+    return [{...image,placeLabel:place?.label || country.replace(/^the /,''),
+      locationEvidence:place && image.locationEvidence==='unknownPlace' ? 'category' : image.locationEvidence}];
+  });
 }
 
 function categoryRoots(country,period) {
@@ -517,7 +542,7 @@ async function regionalPhotos(code,period,ctx) {
       if(item)photos.set(item.url,item);
     }
   }
-  return { photos:[...photos.values()], requested:roots.length, succeeded:available.length };
+  return { photos:await labelRegionalPhotos([...photos.values()],code,country,ctx), requested:roots.length, succeeded:available.length };
 }
 
 function regionArchive(code) {
