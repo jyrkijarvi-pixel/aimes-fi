@@ -3,17 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#102326">
+<meta name="theme-color" content="#0a171a">
 <title>AIMES · Historialliset aikakaudet</title>
 <link rel="stylesheet" href="../style.css">
 <link rel="stylesheet" href="eras.css">
 <script type="module" src="eras.js"></script>
 </head>
 <body>
-<header class="top"><a class="brand" href="/">AIMES</a><a href="/" data-ui="home">Kartta ja paikkahaku</a><button class="outline" type="button" id="language" lang="en">English</button></header>
-<main>
-  <h1 data-ui="title">Historialliset aikakaudet</h1>
-  <p class="intro" data-ui="intro">Valitse maa ja etsi paikka. AIMES ehdottaa vuosikymmeniä löytyneiden valokuvien ajoitustiedoista.</p>
+<header class="top">
+  <a class="brand" href="/">AIMES <span data-ui="brand">MAAILMAN TUTKIMINEN</span></a>
+  <nav class="aimes-nav" aria-label="AIMESin palvelut">
+    <a href="/" data-ui="home">Kartta ja paikkahaku</a>
+    <a href="/#home-gallery" data-ui="gallery">Historialliset kuvat</a>
+    <a href="/time-jump/eras/" aria-current="page" data-ui="navEras">Aikakaudet</a>
+    <a href="/time-jump/helsinki-1952-photo/">TIME JUMP</a>
+    <a href="/aimes-vanha#ihmiset" data-ui="stories">Tarinat</a>
+    <a href="/aimes-vanha#radiot" data-ui="radios">Radiot</a>
+    <a href="/toimisto/" data-ui="office">Toimisto</a>
+    <a href="/aimes-vanha#loyda" data-ui="discover">Muut löydöt</a>
+  </nav>
+  <button class="outline" type="button" id="language" lang="en">English</button>
+</header>
+<main class="eras">
+  <section class="search-panel era-find" aria-labelledby="era-title">
+  <h1 id="era-title" data-ui="title">Historialliset aikakaudet</h1>
+  <p class="intro" data-ui="intro">Hae historiallisia valokuvia maan, paikan tai ajan mukaan. Yksi rajaus riittää.</p>
   <form id="search" class="era-search">
     <div><label for="country" data-ui="country">Maa tai alue</label><select id="country"><option value="">Kaikki maat</option></select></div>
     <div><label for="query" data-ui="place">Paikkakunta (valinnainen)</label><input id="query" minlength="2" maxlength="120" placeholder="Punkalaidun"></div>
@@ -22,7 +36,8 @@
   </form>
   <p id="status" class="status" role="status"></p>
   <ul id="places" class="results"></ul>
-  <section id="destination" aria-labelledby="place-name" hidden>
+  </section>
+  <section class="destination era-results" id="destination" aria-labelledby="place-name" hidden>
     <h2 id="place-name"></h2>
     <div id="wiki"></div>
     <form class="filters">

@@ -2,6 +2,7 @@ import { parsePeriod } from './period.js';
 
 const labels = {
   fi: {
+    brand:'MAAILMAN TUTKIMINEN',nav:'AIMESin palvelut',gallery:'Historialliset kuvat',navEras:'Aikakaudet',stories:'Tarinat',radios:'Radiot',office:'Toimisto',discover:'Muut löydöt',
     home:'Kartta ja paikkahaku',title:'Historialliset aikakaudet',intro:'Hae historiallisia valokuvia maan, paikan tai ajan mukaan. Yksi rajaus riittää.',
     country:'Maa tai alue',place:'Paikkakunta (valinnainen)',period:'Vuosi tai vuosikymmen',periodExample:'1952 tai 1950-luku',find:'Hae',choose:'Kaikki maat',decade:'Vuosikymmen',precision:'Ajoitustarkkuus',location:'Sijainti aineistossa',more:'Näytä lisää',
     guide:'Aloita esimerkiksi valitsemalla Suomi tai kirjoittamalla vuosikymmen 1950-luku.',invalidPeriod:'Anna vuosi tai vuosikymmen, esimerkiksi 1952 tai 1950-luku.',
@@ -10,11 +11,12 @@ const labels = {
     all:'Kaikki löydöt',exact:'Tarkasti ajoitettu',approximate:'Likimääräisesti ajoitettu',unknown:'Ajoittamaton',
     searching:'Haetaan…',loading:'Etsitään valokuvia ja Wikipedia-tietoja…',noPlaces:'Paikkaa ei löytynyt. Kokeile toista nimeä.',failed:'Haku epäonnistui. Yritä uudelleen.',
     noPhotos:'Tällä rajauksella ei löytynyt valokuvia.',photoFailed:'Commons-haku ei vastannut. Paikallinen arkistoaineisto näkyy, jos sitä on.',
-    imageFailed:'Kuva ei latautunut. Voit avata lähdesivun.',notDated:'Lähde ei ilmoita tunnistettavaa kuvausaikaa.',photoSource:'Avaa kuvan lähde',license:'Käyttöoikeus',
+    imageFailed:'Kuvan esikatselu ei latautunut.',retry:'Yritä uudelleen',notDated:'Lähde ei ilmoita tunnistettavaa kuvausaikaa.',photoSource:'Avaa kuvan lähde',license:'Käyttöoikeus',
     artistUnknown:'Tekijää ei ilmoitettu',coordinates:'Sijaintiyhteys: Commonsin koordinaatit.',titleMatch:'Sijaintiyhteys: tiedoston otsikko. Sijaintia ei ole vahvistettu.',archive:'Sijaintiyhteys: arkistotietue.',category:'Sijaintiyhteys: Commonsin paikkaluokka.',unknownPlace:'Kuvauspaikkaa ei voitu vahvistaa.',sourceCategory:'Commonsin hakuluokka',
     wikiMissing:'Tälle paikalle ei löytynyt Wikipedia-tietoja.',wikiFailed:'Wikipedia ei vastannut.',nearby:'Lähikohteita Wikipediassa',count:'kuvaa',estimate:'likimääräistä',dated:'tarkkaa',partial:'Osa Commonsin hauista epäonnistui. Löydöt ovat osittaisia.'
   },
   en: {
+    brand:'WORLD EXPLORER',nav:'AIMES services',gallery:'Historical photo gallery',navEras:'Historical eras',stories:'Stories',radios:'Radio',office:'Office',discover:'Discover',
     home:'Map and place search',title:'Historical eras',intro:'Find photographs by country, place or time. One search field is enough.',
     country:'Country or area',place:'Place (optional)',period:'Year or decade',periodExample:'1952 or 1950s',find:'Search',choose:'All countries',decade:'Decade',precision:'Dating precision',location:'Location in the source',more:'Show more',
     guide:'Start by selecting Finland or typing a decade such as 1950s.',invalidPeriod:'Enter a year or decade, such as 1952 or 1950s.',
@@ -23,7 +25,7 @@ const labels = {
     all:'All finds',exact:'Precisely dated',approximate:'Approximately dated',unknown:'Undated',
     searching:'Searching…',loading:'Searching for photographs and Wikipedia information…',noPlaces:'No place found. Try another name.',failed:'The request failed. Try again.',
     noPhotos:'No photographs match these filters.',photoFailed:'Commons did not respond. Local archive material is shown where available.',
-    imageFailed:'The image could not be loaded. You can open its source page.',notDated:'The source has no recognizable capture date.',photoSource:'Open photo source',license:'Usage rights',
+    imageFailed:'The image preview could not be loaded.',retry:'Try again',notDated:'The source has no recognizable capture date.',photoSource:'Open photo source',license:'Usage rights',
     artistUnknown:'Artist not provided',coordinates:'Location evidence: Commons coordinates.',titleMatch:'Location evidence: filename. The location is unverified.',archive:'Location evidence: archive record.',category:'Location evidence: Commons place category.',unknownPlace:'The location could not be verified.',sourceCategory:'Commons search category',
     wikiMissing:'No Wikipedia information found for this place.',wikiFailed:'Wikipedia did not respond.',nearby:'Nearby in Wikipedia',count:'photos',estimate:'approximate',dated:'precise',partial:'Some Commons searches failed. These results are incomplete.'
   }
@@ -61,6 +63,7 @@ function setLanguage() {
   document.documentElement.lang = language;
   document.title = 'AIMES · '+t('title');
   document.querySelectorAll('[data-ui]').forEach(el=>el.textContent=t(el.dataset.ui));
+  document.querySelector('.aimes-nav').setAttribute('aria-label',t('nav'));
   const toggle = byId('language');
   toggle.textContent = language === 'fi' ? 'English' : 'Suomi';
   toggle.lang = language === 'fi' ? 'en' : 'fi';
@@ -115,17 +118,40 @@ function renderFilters() {
   byId('location-filter').hidden = locations.length < 2;
   byId('include-uncertain').closest('label').hidden = !data.photos.some(image=>image.locationEvidence==='title');
 }
+function photoPreview(image) {
+  const frame = text('div','');
+  frame.className='era-image';
+  const source = new URL(image.src,location.href);
+  if (['upload.wikimedia.org','thumb.wikimedia.org'].includes(source.hostname)) {
+    for (const key of ['utm_source','utm_campaign','utm_content']) source.searchParams.delete(key);
+  }
+  function load(retry = false) {
+    const preview = document.createElement('img');
+    preview.alt=image.title;
+    preview.loading=retry?'eager':'lazy';
+    preview.decoding='async';
+    preview.addEventListener('error',()=>{
+      const fallback = text('div','');
+      fallback.className='era-image-error';
+      const message = text('p',t('imageFailed'));
+      message.setAttribute('role','status');
+      const button = text('button',t('retry'));
+      button.type='button';
+      button.className='outline';
+      button.addEventListener('click',()=>load(true));
+      fallback.append(message,button,link(t('photoSource'),image.original || image.url));
+      frame.replaceChildren(fallback);
+    },{once:true});
+    preview.src=source.href;
+    frame.replaceChildren(preview);
+  }
+  load();
+  return frame;
+}
+
 function photoCard(image) {
   const figure = text('figure','');
   figure.className='era-photo';
-  const preview = document.createElement('img');
-  preview.alt=image.title;
-  preview.loading='lazy';
-  preview.decoding='async';
-  preview.addEventListener('error',()=>{
-    preview.replaceWith(text('p',t('imageFailed')));
-  },{once:true});
-  preview.src=image.src;
   const caption = text('figcaption','');
   const artist = image.artistUnspecified ? t('artistUnknown')+' · '+image.artist
     : image.artist === 'Tekijää ei ilmoitettu' ? t('artistUnknown') : image.artist;
@@ -140,7 +166,7 @@ function photoCard(image) {
   source.append(link(t('photoSource'),image.original || image.url),document.createTextNode(' · '+t('license')+' '),
     image.licenseUrl?link(image.license,image.licenseUrl):document.createTextNode(image.license));
   caption.append(source);
-  figure.append(preview,caption);
+  figure.append(photoPreview(image),caption);
   return figure;
 }
 function renderPhotos() {
