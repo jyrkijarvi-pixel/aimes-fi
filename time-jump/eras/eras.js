@@ -188,9 +188,12 @@ function resetFilters() {
   visibleLimit=batchSize;
 }
 function showResults() {
-  const title=region ? (region.country ? new Intl.DisplayNames([language],{type:'region'}).of(region.country) : t('choose')) : place.label;
+  const title=region ? (region.country ? new Intl.DisplayNames([language],{type:'region'}).of(region.country) : t('choose')) : place.name || place.label;
   const period=region?.period || place?.period;
   byId('place-name').textContent=title+(period?' · '+period:'');
+  const detail=byId('place-detail');
+  detail.hidden=Boolean(region) || !place?.label || place.label===title;
+  detail.textContent=detail.hidden?'':place.label;
   renderWiki(); renderFilters(); renderPhotos();
   byId('destination').hidden=false;
   setStatus(!data.availability.photos?'photoFailed':data.diagnostics.succeeded<data.diagnostics.commonsBatches?'partial':'');
