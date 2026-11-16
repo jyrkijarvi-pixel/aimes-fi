@@ -225,7 +225,9 @@ function photo(page, point, radius, named = false, eras = false, photographTempl
   // A title containing the place name is a useful lead, not verified geographic evidence.
   const localNames = eras ? commonsNames(point) : [(point.name || '').split(',')[0]];
   const titleNamesPlace = localNames.some(name => fold(name).length >= 4 && fold(title).includes(fold(name)));
-  if (named && !titleNamesPlace) return null;
+  const categoryNames = new Set(categories.split('|').map(value => fold(value).replace(/^\d{4} in /,'')));
+  const categoryNamesPlace = eras && localNames.some(name => categoryNames.has(fold(name)));
+  if (named && !titleNamesPlace && !categoryNamesPlace) return null;
   if (eras && nearest && nearest.metres > 15000) return null;
   if (!named && (!nearest || nearest.metres > radius)) return null;
   const src = info.thumburl || info.url;
@@ -238,7 +240,7 @@ function photo(page, point, radius, named = false, eras = false, photographTempl
       /\b(flag|logo|coat of arms|icon|screenshot|diagram|postage stamp|book cover|poster)\b/i.test(title) ||
       !(photographTemplate || /photograph|\bphotos?\b|valokuva|negatiiv|flickr|daguerreotype|albumen/i.test(context)))) return null;
   const kind = category === 'maps' ? 'Kartta' : isIllustration ? 'Piirros tai kuvitus' : 'Kuva-aineisto';
-  const evidence = nearest && nearest.metres <= radius ? 'coordinates' : 'title';
+  const evidence = nearest && nearest.metres <= radius ? 'coordinates' : categoryNamesPlace ? 'category' : 'title';
   return {
     title, artist: (artist || 'Tekijää ei ilmoitettu').slice(0, 300), license,
     licenseUrl: /^https:\/\//.test(licenseUrl) ? licenseUrl : '',
@@ -257,6 +259,26 @@ const archive = {
   original: 'https://www.finna.fi/Record/hkm.HKMS000005:km0000mrdm', license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
   date: '19.7.1952', year: 1952, lat:60.187, lon:24.927, locationApprox:true, distance:1500, category:'people', kind:'Valokuva', locationEvidence:'coordinates'
 };
+
+// Museovirasto credits the collection and leaves the photographer field blank.
+// Each record describes the same border area and dates its own photograph to 1954.
+const punkalaidun1954 = [
+  '8132C068D723B68525B5EA74916A8C75','EF13583BAD7D1ABDBA6F1B13A107E2D4',
+  '3CE6AEB305936F127E87FFC0AACD53CB','89A512CA6F8C48D45A3FBFE818C7E303',
+  'FDCAC1FD3D78189262A3042C7F0ECB21'
+].map((id,index) => {
+  const record = 'museovirasto.'+id;
+  return {
+    title:'Ravustus Huittisten ja Punkalaitumen rajamailla · JOKAUAS2 2438:'+(index+1),
+    date:'1954', artist:'Museovirasto / JOKA Journalistinen kuva-arkisto / UA Saarisen kokoelma',
+    artistUnspecified:true, locationEvidence:'archive', license:'CC BY 4.0',
+    licenseUrl:'https://creativecommons.org/licenses/by/4.0/',
+    original:'https://www.finna.fi/Record/'+record,
+    url:'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(
+      'Crabbing has started on the borderland of Huittinen and Punkalaidun 1954 (JOKAUAS2 2438-'+(index+1)+').tif'),
+    src:'https://www.finna.fi/Cover/Show?source=Solr&id='+record+'&index=0&size=medium'
+  };
+});
 
 function commonsNames(point) {
   const names = unique([point.alias, point.name, point.article].map(name => name?.split(',')[0].trim()));
@@ -286,13 +308,19 @@ async function pictures(point, eras = false) {
       ...mediaProps
     }));
   }
+  if (eras) requests.push(wiki(host, {
+    generator:'search', gsrnamespace:6, gsrlimit:40,
+    gsrsearch:`nearcoord:5km,${point.lat},${point.lon} filetype:bitmap hastemplate:Photograph`,
+    ...mediaProps
+  }));
   const settled = await Promise.allSettled(requests);
   if (settled.every(r => r.status === 'rejected')) throw new Error('Wikimedia Commons ei vastannut.');
   const imageBySource = new Map();
   settled.forEach((result, sourceIndex) => {
     if (result.status !== 'fulfilled') return;
     for (const page of result.value) {
-      const image = photo(page, point, radius, sourceIndex > 0, eras, eras && sourceIndex === 2);
+      const archiveSearch = eras && sourceIndex === requests.length-1;
+      const image = photo(page, point, radius, sourceIndex > 0 && !archiveSearch, eras, archiveSearch || (eras && names.length > 0 && sourceIndex === 2));
       if (!image) continue;
       const previous = imageBySource.get(image.url);
       // Prefer verified coordinates if another search found the same photo without them.
@@ -353,6 +381,9 @@ async function eras(point, language) {
     eraWiki(point, language)
   ]);
   const media = [...history.value?.photos || []];
+  if (/^punkalaidun$/i.test(point.name) && distance(point,{lat:61.1158,lon:23.0994})<=15000) {
+    media.unshift(...punkalaidun1954);
+  }
   if (distance(point, helsinki) <= 3000 && /^(helsinki|helsingfors)$/i.test(point.name)) {
     const index = media.findIndex(image => image.url === archive.url);
     const record = { ...archive, src:'/time-jump/' + archive.src, date:'1952-07-19' };
@@ -373,7 +404,7 @@ async function eras(point, language) {
     const { precision,start,end,uncertain } = image.capture;
     // A cross-decade range or circa-year cannot substantiate a particular decade.
     const decade = Math.floor(start/10)*10;
-    if (precision === 'unknown'||uncertain||end>=decade+10) continue;
+    if (image.locationEvidence === 'title'||precision === 'unknown'||uncertain||end>=decade+10) continue;
     const count = counts.get(decade) || { decade, exact:0, approximate:0 };
     count[precision]++;
     counts.set(decade,count);

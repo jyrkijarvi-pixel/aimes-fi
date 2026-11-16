@@ -4,23 +4,25 @@ const labels = {
   fi: {
     home:'Kartta ja paikkahaku',title:'Historialliset aikakaudet',intro:'Valitse maa ja etsi paikka. AIMES ehdottaa vuosikymmeniä löytyneiden valokuvien ajoitustiedoista.',
     country:'Maa',place:'Paikka',find:'Hae paikka',choose:'Valitse maa',decade:'Vuosikymmen',precision:'Ajoitustarkkuus',
-    scope:'Ehdotukset kuvaavat tämän haun löydöksiä. Kuvien sijainti voi perustua koordinaatteihin tai paikannimeen tiedoston otsikossa.',
+    scope:'Vuosikymmenet perustuvat koordinaatteihin, Commonsin paikkaluokkaan tai arkistotietueeseen. Pelkkä otsikko-osuma ei vaikuta ehdotuksiin.',
+    includeUncertain:'Näytä myös vahvistamattomat otsikko-osumat',noDecades:'Tästä hausta ei löytynyt kuvia, jotka tukisivat tiettyä vuosikymmentä.',
     all:'Kaikki löydöt',exact:'Tarkasti ajoitettu',approximate:'Likimääräisesti ajoitettu',unknown:'Ajoittamaton',
     searching:'Haetaan…',loading:'Etsitään valokuvia ja Wikipedia-tietoja…',noPlaces:'Paikkaa ei löytynyt. Kokeile toista nimeä.',failed:'Haku epäonnistui. Yritä uudelleen.',
     noPhotos:'Tällä rajauksella ei löytynyt valokuvia.',photoFailed:'Commons-haku ei vastannut. Paikallinen arkistoaineisto näkyy, jos sitä on.',
     imageFailed:'Kuva ei latautunut. Voit avata lähdesivun.',notDated:'Lähde ei ilmoita tunnistettavaa kuvausaikaa.',photoSource:'Avaa kuvan lähde',license:'Käyttöoikeus',
-    artistUnknown:'Tekijää ei ilmoitettu',coordinates:'Sijaintiyhteys: Commonsin koordinaatit.',titleMatch:'Sijaintiyhteys: tiedoston otsikko. Sijaintia ei ole vahvistettu.',archive:'Sijaintiyhteys: museon tietue.',
+    artistUnknown:'Tekijää ei ilmoitettu',coordinates:'Sijaintiyhteys: Commonsin koordinaatit.',titleMatch:'Sijaintiyhteys: tiedoston otsikko. Sijaintia ei ole vahvistettu.',archive:'Sijaintiyhteys: arkistotietue.',category:'Sijaintiyhteys: Commonsin paikkaluokka.',
     wikiMissing:'Tälle paikalle ei löytynyt Wikipedia-tietoja.',wikiFailed:'Wikipedia ei vastannut.',nearby:'Lähikohteita Wikipediassa',count:'kuvaa',estimate:'likimääräistä',dated:'tarkkaa',partial:'Osa Commonsin hauista epäonnistui. Löydöt ovat osittaisia.'
   },
   en: {
     home:'Map and place search',title:'Historical eras',intro:'Choose a country and find a place. AIMES suggests decades based on dates found in the photograph metadata.',
     country:'Country',place:'Place',find:'Find a place',choose:'Choose a country',decade:'Decade',precision:'Dating precision',
-    scope:'Suggestions reflect this search only. A photo’s connection to the place may come from coordinates or a place name in its filename.',
+    scope:'Decades are based on coordinates, a Commons place category or an archive record. Filename-only matches do not affect suggestions.',
+    includeUncertain:'Include unverified filename matches',noDecades:'This search found no photographs that substantiate a specific decade.',
     all:'All finds',exact:'Precisely dated',approximate:'Approximately dated',unknown:'Undated',
     searching:'Searching…',loading:'Searching for photographs and Wikipedia information…',noPlaces:'No place found. Try another name.',failed:'The request failed. Try again.',
     noPhotos:'No photographs match these filters.',photoFailed:'Commons did not respond. Local archive material is shown where available.',
     imageFailed:'The image could not be loaded. You can open its source page.',notDated:'The source has no recognizable capture date.',photoSource:'Open photo source',license:'Usage rights',
-    artistUnknown:'Artist not provided',coordinates:'Location evidence: Commons coordinates.',titleMatch:'Location evidence: filename. The location is unverified.',archive:'Location evidence: museum record.',
+    artistUnknown:'Artist not provided',coordinates:'Location evidence: Commons coordinates.',titleMatch:'Location evidence: filename. The location is unverified.',archive:'Location evidence: archive record.',category:'Location evidence: Commons place category.',
     wikiMissing:'No Wikipedia information found for this place.',wikiFailed:'Wikipedia did not respond.',nearby:'Nearby in Wikipedia',count:'photos',estimate:'approximate',dated:'precise',partial:'Some Commons searches failed. These results are incomplete.'
   }
 };
@@ -42,7 +44,7 @@ const setStatus = key => { byId('status').textContent = key ? t(key) : ''; };
 function renderCountries() {
   const previous = country.value;
   const names = new Intl.DisplayNames([language],{type:'region'});
-  const options = countries.filter(row=>/^[A-Z]{2}$/.test(row[2])).map(row=>[row[2],names.of(row[2])]);
+  const options = countries.map(code=>[code,names.of(code)]);
   options.sort((a,b)=>a[1].localeCompare(b[1],language));
   country.replaceChildren(option('',t('choose')),...options.map(([code,name])=>option(code,name)));
   country.value = previous;
@@ -109,10 +111,11 @@ function photoCard(image) {
   },{once:true});
   preview.src=image.src;
   const caption = text('figcaption','');
-  const artist = image.artist === 'Tekijää ei ilmoitettu' ? t('artistUnknown') : image.artist;
+  const artist = image.artistUnspecified ? t('artistUnknown')+' · '+image.artist
+    : image.artist === 'Tekijää ei ilmoitettu' ? t('artistUnknown') : image.artist;
   caption.append(text('strong',image.title),text('small',artist),
     text('small',t(image.capture.precision)+(image.date?' · '+image.date:' · '+t('notDated'))),
-    text('small',t(image.locationEvidence==='coordinates'?'coordinates':image.locationEvidence==='archive'?'archive':'titleMatch')));
+    text('small',t(image.locationEvidence==='title'?'titleMatch':image.locationEvidence)));
   if(image.restrictions)caption.append(text('small',image.restrictions));
   const source = text('small','');
   source.append(link(t('photoSource'),image.original || image.url),document.createTextNode(' · '+t('license')+' '),
@@ -123,10 +126,11 @@ function photoCard(image) {
 }
 function renderPhotos() {
   const chosen = decade.value ? Number(decade.value) : null;
-  const photos = data.photos.filter(({capture})=>
+  const photos = data.photos.filter(({capture,locationEvidence})=>
+    (locationEvidence!=='title'||byId('include-uncertain').checked) &&
     (precision.value==='all'||precision.value===capture.precision) &&
     (chosen===null||(!capture.uncertain&&capture.start!==null&&capture.start>=chosen&&capture.end<chosen+10)));
-  byId('count').textContent = photos.length ? photos.length+' '+t('count') : t('noPhotos');
+  byId('count').textContent = photos.length ? photos.length+' '+t('count')+(!data.decades.length?' · '+t('noDecades'):'') : t('noPhotos');
   byId('photos').replaceChildren(...photos.map(photoCard));
 }
 async function loadPlace(selected, keepFilters = false) {
@@ -210,8 +214,10 @@ decade.addEventListener('change',()=>{
   renderPhotos();
 });
 precision.addEventListener('change',()=>renderPhotos());
+byId('include-uncertain').addEventListener('change',()=>renderPhotos());
+byId('query').value=(new URL(location.href).searchParams.get('q') || '').slice(0,120);
 setLanguage();
-fetch('../data/countries.json').then(res=>{
+fetch('countries.json').then(res=>{
   if(!res.ok)throw Error(res.status);
   return res.json();
 }).then(value=>{

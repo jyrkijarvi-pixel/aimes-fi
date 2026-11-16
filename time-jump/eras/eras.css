@@ -13,3 +13,5 @@ select,#query { width:100%; min-height:44px; padding:6px 9px; border:1px solid #
 .era-photo small { margin-top:4px; }
 #wiki { margin:10px 0; max-width:78ch; }
 #wiki p { margin:6px 0; }
+.era-evidence { display:flex; align-items:center; gap:8px; flex-basis:100%; padding-top:4px; }
+.era-evidence input { flex:none; min-height:22px; width:22px; }

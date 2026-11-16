@@ -298,6 +298,7 @@ async function travel(point, year = null, move = true) {
   byId('destination').hidden = false;
   byId('back').hidden = false;
   byId('place-title').textContent = point.name || 'Karttapiste';
+  byId('place-eras').href = '/time-jump/eras/' + (point.kind === 'point' || !point.name ? '' : '?q='+encodeURIComponent(point.name));
   byId('place-label').textContent = point.label === point.name ? '' : point.label || '';
   byId('coordinates').textContent = `${pointLabel(point.lat, point.lon)} · ${year === null ? 'NYKYHETKI' : yearLabel(year)}`;
   byId('year').value = year ?? '';
