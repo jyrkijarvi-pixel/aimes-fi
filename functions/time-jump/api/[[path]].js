@@ -238,7 +238,7 @@ function photo(page, point, radius, named = false, eras = false, photographTempl
   const isIllustration = /\b(drawing|illustration|painting|sketch|engraving|piirros|maalaus|kaiverrus)\b/i.test(context);
   if (eras && (category === 'maps' || isIllustration ||
       /\b(flag|logo|coat of arms|icon|screenshot|diagram|postage stamp|book cover|poster)\b/i.test(title) ||
-      !(photographTemplate || /photograph|\bphotos?\b|valokuva|negatiiv|flickr|daguerreotype|albumen/i.test(context)))) return null;
+      !(photographTemplate || /photograph|\bphotos?\b|valokuva|negatiiv|flickr|geograph|daguerreotype|albumen/i.test(context)))) return null;
   const kind = category === 'maps' ? 'Kartta' : isIllustration ? 'Piirros tai kuvitus' : 'Kuva-aineisto';
   const evidence = nearest && nearest.metres <= radius ? 'coordinates' : categoryNamesPlace ? 'category' : 'title';
   return {
@@ -279,6 +279,29 @@ const punkalaidun1954 = [
     src:'https://www.finna.fi/Cover/Show?source=Solr&id='+record+'&index=0&size=medium'
   };
 });
+
+// Verified Geograph photographs with capture dates and camera coordinates on Commons.
+const londonArchive = [
+  ['London Tower Bridge, 1950','London Tower Bridge, 1950 geograph-3046604-by-Ben-Brooksbank.jpg','c/c8','1950-06-10',51.502833,-0.068028],
+  ['Northwards across London Bridge, 1949','Northwards across London Bridge, 1949 - geograph.org.uk - 4569486.jpg','0/07','1949-06-21',51.5062209,-0.08820284]
+].map(([title,file,folder,date,lat,lon])=>{
+  const name=encodeURIComponent(file.replaceAll(' ','_'));
+  return {
+    title,date,lat,lon,artist:'Ben Brooksbank',locationEvidence:'coordinates',
+    license:'CC BY-SA 2.0',licenseUrl:'https://creativecommons.org/licenses/by-sa/2.0/',
+    url:'https://commons.wikimedia.org/wiki/File:'+name,
+    src:`https://thumb.wikimedia.org/wikipedia/commons/thumb/${folder}/${name}/960px-${name}`
+  };
+});
+
+function mergeArchive(photos, archiveRecords) {
+  const key = url => {
+    try { return decodeURIComponent(url).replaceAll('_',' '); }
+    catch { return url; }
+  };
+  const known = new Set(archiveRecords.map(record=>key(record.url)));
+  return [...archiveRecords,...photos.filter(photo=>!known.has(key(photo.url)))];
+}
 
 function commonsNames(point) {
   const names = unique([point.alias, point.name, point.article].map(name => name?.split(',')[0].trim()));
@@ -380,9 +403,12 @@ async function eras(point, language) {
     cached(`era-media:${key}`, () => pictures(point, true)),
     eraWiki(point, language)
   ]);
-  const media = [...history.value?.photos || []];
+  let media = [...history.value?.photos || []];
   if (/^punkalaidun$/i.test(point.name) && distance(point,{lat:61.1158,lon:23.0994})<=15000) {
-    media.unshift(...punkalaidun1954);
+    media = mergeArchive(media,punkalaidun1954);
+  }
+  if (commonsNames(point).some(name=>/^(london|lontoo|greater london)$/i.test(name))) {
+    media = mergeArchive(media,londonArchive.filter(record=>distance(point,record)<=5000));
   }
   if (distance(point, helsinki) <= 3000 && /^(helsinki|helsingfors)$/i.test(point.name)) {
     const index = media.findIndex(image => image.url === archive.url);
