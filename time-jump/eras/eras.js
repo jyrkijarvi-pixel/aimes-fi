@@ -2,6 +2,7 @@ import { parsePeriod } from './period.js';
 
 const labels = {
   fi: {
+    finnaIndexedCoordinates:'Sijaintiyhteys: arkiston indeksoidut paikkakoordinaatit. Tarkka kuvauspiste on varmistamatta.',
     source:'Lähde',allSources:'Kaikki',finnaCoordinates:'Sijaintiyhteys: Finnan kuvaustapahtuman koordinaatit.',finnaEventPlace:'Sijaintiyhteys: Finnan kuvaustapahtuman paikkatieto.',finnaSubject:'Sijaintiyhteys: arkiston aihepaikka. Tarkkaa kuvauspaikkaa ei ole varmennettu.',
     restricted:'Esikatselua ei näytetä, koska käyttöoikeus on rajoitettu tai epäselvä.',finnaFailed:'Finna-haku epäonnistui. Muiden lähteiden tulokset ovat käytettävissä.',finnaScope:'Finna: rajattu 36 tietueen otos. Ajoitukset perustuvat kuvaus- tai valmistustapahtumaan. Puuttuvasta kuvausajasta ei ehdoteta vuosikymmentä.',
     alternative:'Sama kuva myös lähteessä',dateEvidence:'Arkiston alkuperäinen ajoitustieto',institution:'Kokoelmaorganisaatio',rightsUnknown:'Käyttöoikeutta ei ilmoitettu',rightsDetails:'Lähteen käyttöoikeusohje',
@@ -19,6 +20,7 @@ const labels = {
     wikiMissing:'Tälle paikalle ei löytynyt Wikipedia-tietoja.',wikiFailed:'Wikipedia ei vastannut.',nearby:'Lähikohteita Wikipediassa',count:'kuvaa',estimate:'likimääräistä',dated:'tarkkaa',partial:'Osa Commonsin hauista epäonnistui. Löydöt ovat osittaisia.'
   },
   en: {
+    finnaIndexedCoordinates:'Location evidence: indexed archive place coordinates. The precise camera position is unverified.',
     source:'Source',allSources:'All',finnaCoordinates:'Location evidence: Finna capture-event coordinates.',finnaEventPlace:'Location evidence: Finna capture-event place.',finnaSubject:'Location evidence: archive subject place. The precise camera location is unverified.',
     restricted:'Preview withheld because image rights are restricted or unclear.',finnaFailed:'Finna search failed. Results from the other sources remain available.',finnaScope:'Finna: a limited sample of 36 records. Dating uses capture or creation events. A missing capture date cannot suggest a decade.',
     alternative:'Same photograph also catalogued at',dateEvidence:'Original archive date statement',institution:'Collection institution',rightsUnknown:'Rights not specified',rightsDetails:'Usage instructions from the source',

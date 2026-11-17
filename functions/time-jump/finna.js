@@ -52,10 +52,17 @@ export function finnaPhoto(record,{point,names,code,countryNames,cities,boundary
   const locationTokens=unique(places.flatMap(place=>fold(place).split(/\s*(?:,|;|\s-\s)\s*/)));
   const aliases=names.map(fold);
   const matchesPlace=point && aliases.some(name=>locationTokens.includes(name));
-  const positions=events.flatMap(event=>tags(event,'eventPlace').flatMap(place=>tags(place,'pos')))
+  const eventPositions=events.flatMap(event=>tags(event,'eventPlace').flatMap(place=>tags(place,'pos')))
     .map(pos=>text(pos).split(/\s+/).map(Number))
     .filter(([lat,lon])=>Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180&&(lat!==0||lon!==0))
     .map(([lat,lon])=>({lat,lon}));
+  const indexedPositions=list(record.rawData?.location_geo).flatMap(value=>{
+    const match=String(value).match(/^POINT\((-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\)$/);
+    if(!match)return [];
+    const lon=Number(match[1]),lat=Number(match[2]);
+    return Math.abs(lat)<=90&&Math.abs(lon)<=180&&(lat!==0||lon!==0)?[{lat,lon}]:[];
+  });
+  const positions=eventPositions.length?eventPositions:indexedPositions;
   const nearest=point ? positions.map(pos=>({...pos,metres:distance(point,pos)})).sort((a,b)=>a.metres-b.metres)[0] : positions[0];
   if (point && (nearest ? nearest.metres>15000 : !matchesPlace)) return null;
   const explicitCountries=locationTokens.flatMap(token=>countryNames.get(token) || []);
@@ -88,7 +95,8 @@ export function finnaPhoto(record,{point,names,code,countryNames,cities,boundary
     restrictions:list(rights.description).map(text).join(' ').slice(0,2400),
     src:permitted&&previewUrl?.protocol==='https:'&&previewUrl.hostname==='api.finna.fi'?previewUrl.href:null,
     url,original:url,source:'finna',finnaIds:unique([record.id,...list(record.dedupIds)]),
-    locationEvidence:nearest?'finnaCoordinates':eventPlaces.length?'finnaEventPlace':places.length?'finnaSubject':'unknownPlace',
+    locationEvidence:nearest?(eventPositions.length?'finnaCoordinates':'finnaIndexedCoordinates'):eventPlaces.length?'finnaEventPlace':places.length?'finnaSubject':'unknownPlace',
+    locationApprox:Boolean(nearest&&!eventPositions.length),
     placeLabel:places[0] || '',lat:nearest?.lat ?? null,lon:nearest?.lon ?? null,
     dateEvidence:dateValues.join(' · '),dateMissing:!date,previewRestricted:!permitted,
     identifiers:list(record.rawData?.identifier).map(text),
