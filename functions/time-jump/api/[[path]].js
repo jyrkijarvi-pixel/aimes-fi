@@ -1,6 +1,7 @@
 'use strict';
 
 import { parsePeriod, inPeriod } from '../../../time-jump/eras/period.js';
+import { searchFinna, finnaPhoto, combinePhotos } from '../finna.js';
 
 const ua = 'AIMESWorldExplorer/0.3 (+https://aimes.fi/time-jump/)';
 const configuredSearch = 'https://nominatim.openstreetmap.org/search';
@@ -251,6 +252,8 @@ function photo(page, point, radius, named = false, eras = false, photographTempl
     distance:nearest && !scope ? Math.round(nearest.metres) : null,
     lat: evidence === 'coordinates' ? nearest?.lat : null, lon: evidence === 'coordinates' ? nearest?.lon : null,
     locationApprox:false, locationEvidence:evidence, category, kind,
+    finnaIds:[...JSON.stringify(info.extmetadata || {}).matchAll(/https?:\/\/(?:www\.)?finna\.fi\/Record\/([A-Za-z0-9._:%-]+)/g)]
+      .map(match=>{try{return decodeURIComponent(match[1]);}catch{return match[1];}}),
     restrictions:meta('Restrictions').slice(0, 150),
     ...(scope ? { locationHints:categoryLocations(categories), scopeCategory:scope.root } : {})
   };
@@ -407,7 +410,7 @@ function captureDate(raw) {
 }
 
 function datedResults(media, period) {
-  const photos = media.map(image => ({ ...image, capture:captureDate(image.date) }))
+  const photos = media.map(image => ({ ...image, capture:image.capture || captureDate(image.date) }))
     .filter(image=>inPeriod(image.capture,period));
   const counts = new Map();
   for (const image of photos) {
@@ -563,6 +566,46 @@ async function regionalEras(code,period,ctx) {
   };
 }
 
+async function finnaResults(point,code,period,ctx) {
+  await ensureCountries(ctx);
+  if (!regionCityLabels) regionCityLabels=assetJson(ctx,'era-city-labels.json').catch(error=>{regionCityLabels=null;throw error;});
+  const cities=await regionCityLabels;
+  let boundary;
+  if (code) {
+    if (!boundaries) boundaries=assetJson(ctx,'world.json').catch(error=>{boundaries=null;throw error;});
+    boundary=(await boundaries).features.find(feature=>feature.properties.code===code)?.geometry;
+  }
+  const countryNames=new Map();
+  for (const [id,names] of countryLabels) for (const name of names) {
+    const key=fold(name);
+    countryNames.set(key,[...(countryNames.get(key) || []),id]);
+  }
+  const names=point ? commonsNames(point) : code ? countryLabels.get(code) || [] : [];
+  const response=await cached('finna:'+JSON.stringify({names,period}),()=>searchFinna({names,period}));
+  const photos=response.records.map(record=>finnaPhoto(record,{
+    point,names,code,countryNames,cities,boundary,withinCountry,distance,captureDate
+  })).filter(Boolean);
+  return {photos,total:response.total,query:response.query,ms:response.ms,records:response.records.length};
+}
+
+async function combinedEras(point,code,period,language,source,ctx) {
+  const started=Date.now();
+  const [commons,finna]=await Promise.allSettled([
+    source==='finna' ? (point ? eraWiki(point,language).catch(()=>({main:null,nearby:[]})) : Promise.resolve({main:null,nearby:[]})).then(wiki=>({
+      photos:[],wiki,availability:{photos:false,wiki:true},diagnostics:{commonsBatches:0,succeeded:0}
+    })) : point ? eras(point,language,period) : regionalEras(code,period,ctx),
+    source==='commons' ? Promise.resolve(null) : finnaResults(point,code,period,ctx)
+  ]);
+  const base=commons.value || {photos:[],wiki:{main:null,nearby:[]},availability:{photos:false,wiki:false},diagnostics:{commonsBatches:0,succeeded:0}};
+  const joined=combinePhotos(base.photos,finna.value?.photos || []);
+  return {
+    ...base,...datedResults(joined.photos,period),
+    availability:{...base.availability,photos:base.availability.photos || Boolean(finna.value),finna:source==='commons'?null:finna.status==='fulfilled'},
+    diagnostics:{...base.diagnostics,finnaRequests:source==='commons'?0:1,finnaTotal:finna.value?.total ?? null,
+      finnaRecords:finna.value?.records ?? 0,finnaQuery:finna.value?.query || '',duplicates:joined.duplicates,
+      serverMs:Date.now()-started}
+  };
+}
 
 
 const apiHeaders = {
@@ -596,19 +639,21 @@ export async function onRequest(ctx) {
       return respond(await search(q,ctx,country));
     }
     if(route==='eras' || route==='era-wiki') {
+      const source=url.searchParams.get('source') || 'all';
+      if (!['all','commons','finna'].includes(source))return respond({error:'Virheellinen lähde.'},400);
+      const language = url.searchParams.get('lang')==='en'?'en':'fi';
       let period;
       try { period = parsePeriod(url.searchParams.get('period') || ''); }
       catch { return respond({error:'Virheellinen aikarajaus.'},400); }
       const code = (url.searchParams.get('country') || '').toUpperCase();
       if (code && (!/^[A-Z]{2}$/.test(code)||!englishRegions.of(code)))return respond({error:'Virheellinen maatunnus.'},400);
       if (route==='eras' && !url.searchParams.has('lat') && !url.searchParams.has('lon') && (code || period)) {
-        return respond(await regionalEras(code,period,ctx));
+        return respond(await combinedEras(null,code,period,language,source,ctx));
       }
       const point=parsePoint(url.searchParams);
       if(!point || !point.name || point.kind==='country')return respond({error:'Valitse paikka.'},400);
-      const language = url.searchParams.get('lang')==='en'?'en':'fi';
       if(route==='era-wiki')return respond(await eraWiki({ ...point, year:null },language));
-      return respond(await eras({ ...point, alias:(url.searchParams.get('alias') || '').slice(0,45), year:null },language,period));
+      return respond(await combinedEras({ ...point, alias:(url.searchParams.get('alias') || '').slice(0,45), year:null },code,period,language,source,ctx));
     }
     if(route==='place') {
       const p=parsePoint(url.searchParams);

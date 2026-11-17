@@ -41,7 +41,9 @@
     <h2 id="place-name"></h2>
     <p id="place-detail" class="place-label" hidden></p>
     <div id="wiki"></div>
+    <p id="source-status" class="fine" role="status"></p>
     <form class="filters">
+      <div><label for="source" data-ui="source">Lähde</label><select id="source"><option value="all">Kaikki</option><option value="commons">Wikimedia Commons</option><option value="finna">Finna</option></select></div>
       <div><label for="decade" data-ui="decade">Vuosikymmen</label><select id="decade"></select></div>
       <div><label for="precision" data-ui="precision">Ajoitustarkkuus</label><select id="precision"></select></div>
       <div id="location-filter" hidden><label for="location" data-ui="location">Sijainti aineistossa</label><select id="location"></select></div>

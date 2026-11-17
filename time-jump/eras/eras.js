@@ -2,6 +2,9 @@ import { parsePeriod } from './period.js';
 
 const labels = {
   fi: {
+    source:'Lähde',finnaCoordinates:'Sijaintiyhteys: Finnan kuvaustapahtuman koordinaatit.',finnaEventPlace:'Sijaintiyhteys: Finnan kuvaustapahtuman paikkatieto.',finnaSubject:'Sijaintiyhteys: arkiston aihepaikka. Tarkkaa kuvauspaikkaa ei ole varmennettu.',
+    restricted:'Esikatselua ei näytetä, koska käyttöoikeus on rajoitettu tai epäselvä.',finnaFailed:'Finna-haku epäonnistui. Muiden lähteiden tulokset ovat käytettävissä.',finnaScope:'Finna: rajattu 36 tietueen otos. Ajoitukset perustuvat kuvaus- tai valmistustapahtumaan. Puuttuvasta kuvausajasta ei ehdoteta vuosikymmentä.',
+    alternative:'Sama kuva myös lähteessä',dateEvidence:'Arkiston alkuperäinen ajoitustieto',institution:'Kokoelmaorganisaatio',rightsUnknown:'Käyttöoikeutta ei ilmoitettu',
     brand:'MAAILMAN TUTKIMINEN',nav:'AIMESin palvelut',gallery:'Historialliset kuvat',navEras:'Aikakaudet',stories:'Tarinat',radios:'Radiot',office:'Toimisto',discover:'Muut löydöt',
     home:'Kartta ja paikkahaku',title:'Historialliset aikakaudet',intro:'Hae historiallisia valokuvia maan, paikan tai ajan mukaan. Yksi rajaus riittää.',
     country:'Maa tai alue',place:'Paikkakunta (valinnainen)',period:'Vuosi tai vuosikymmen',periodExample:'1952 tai 1950-luku',find:'Hae',choose:'Kaikki maat',decade:'Vuosikymmen',precision:'Ajoitustarkkuus',location:'Sijainti aineistossa',more:'Näytä lisää',
@@ -16,6 +19,9 @@ const labels = {
     wikiMissing:'Tälle paikalle ei löytynyt Wikipedia-tietoja.',wikiFailed:'Wikipedia ei vastannut.',nearby:'Lähikohteita Wikipediassa',count:'kuvaa',estimate:'likimääräistä',dated:'tarkkaa',partial:'Osa Commonsin hauista epäonnistui. Löydöt ovat osittaisia.'
   },
   en: {
+    source:'Source',finnaCoordinates:'Location evidence: Finna capture-event coordinates.',finnaEventPlace:'Location evidence: Finna capture-event place.',finnaSubject:'Location evidence: archive subject place. The precise camera location is unverified.',
+    restricted:'Preview withheld because image rights are restricted or unclear.',finnaFailed:'Finna search failed. Results from the other sources remain available.',finnaScope:'Finna: a limited sample of 36 records. Dating uses capture or creation events. A missing capture date cannot suggest a decade.',
+    alternative:'Same photograph also catalogued at',dateEvidence:'Original archive date statement',institution:'Collection institution',rightsUnknown:'Rights not specified',
     brand:'WORLD EXPLORER',nav:'AIMES services',gallery:'Historical photo gallery',navEras:'Historical eras',stories:'Stories',radios:'Radio',office:'Office',discover:'Discover',
     home:'Map and place search',title:'Historical eras',intro:'Find photographs by country, place or time. One search field is enough.',
     country:'Country or area',place:'Place (optional)',period:'Year or decade',periodExample:'1952 or 1950s',find:'Search',choose:'All countries',decade:'Decade',precision:'Dating precision',location:'Location in the source',more:'Show more',
@@ -69,6 +75,8 @@ function setLanguage() {
   toggle.lang = language === 'fi' ? 'en' : 'fi';
   periodInput.placeholder=t('periodExample');
   renderCountries();
+  byId('source').options[0].textContent=t('all');
+  if(data)renderSourceStatus();
 }
 async function api(route, parameters, signal) {
   const result = await fetch(endpoint+route+'?'+new URLSearchParams(parameters),{signal});
@@ -106,7 +114,16 @@ function renderWiki() {
 }
 function renderFilters() {
   const selectedDecade = decade.value, selectedPrecision = precision.value;
-  decade.replaceChildren(option('',t('all')),...data.decades.map(row=>option(String(row.decade),
+  const counts=new Map();
+  for(const image of selectedPhotos()) {
+    const capture=image.capture;
+    const decade=Math.floor(capture.start/10)*10;
+    if(image.locationEvidence==='title'||capture.start===null||capture.uncertain||capture.end>=decade+10)continue;
+    const row=counts.get(decade)||{decade,exact:0,approximate:0};
+    row[capture.precision]++;
+    counts.set(decade,row);
+  }
+  decade.replaceChildren(option('',t('all')),...[...counts.values()].sort((a,b)=>a.decade-b.decade).map(row=>option(String(row.decade),
     (language==='fi'?row.decade+'-luku':row.decade+'s')+' · '+row.exact+' '+t('dated')+', '+row.approximate+' '+t('estimate'))));
   precision.replaceChildren(...['all','exact','approximate','unknown'].map(key=>option(key,t(key))));
   if([...decade.options].some(item=>item.value===selectedDecade))decade.value=selectedDecade;
@@ -121,6 +138,11 @@ function renderFilters() {
 function photoPreview(image) {
   const frame = text('div','');
   frame.className='era-image';
+  if(!image.src) {
+    frame.classList.add('era-image-error');
+    frame.append(text('p',t('restricted')),link(t('photoSource'),image.original || image.url));
+    return frame;
+  }
   const source = new URL(image.src,location.href);
   if (['upload.wikimedia.org','thumb.wikimedia.org'].includes(source.hostname)) {
     for (const key of ['utm_source','utm_campaign','utm_content']) source.searchParams.delete(key);
@@ -158,20 +180,27 @@ function photoCard(image) {
   caption.append(text('strong',image.title),text('small',artist),
     text('small',t(image.capture.precision)+(image.date?' · '+image.date:' · '+t('notDated'))),
     text('small',t(image.locationEvidence==='title'?'titleMatch':image.locationEvidence)));
+  caption.append(text('small',image.source==='finna'?'Finna':'Wikimedia Commons'));
+  if(image.institution)caption.append(text('small',t('institution')+' · '+image.institution));
+  if(image.dateEvidence)caption.append(text('small',t('dateEvidence')+' · '+image.dateEvidence));
   if(image.placeLabel)caption.append(text('small',image.placeLabel));
   if(image.lat!=null && image.lon!=null)caption.append(text('small',image.lat.toFixed(4)+', '+image.lon.toFixed(4)));
   if(image.scopeCategory)caption.append(link(t('sourceCategory'), 'https://commons.wikimedia.org/wiki/Category:'+encodeURIComponent(image.scopeCategory)));
   if(image.restrictions)caption.append(text('small',image.restrictions));
   const source = text('small','');
   source.append(link(t('photoSource'),image.original || image.url),document.createTextNode(' · '+t('license')+' '),
-    image.licenseUrl?link(image.license,image.licenseUrl):document.createTextNode(image.license));
+    image.licenseUrl?link(image.license,image.licenseUrl):document.createTextNode(image.license==='Unknown'?t('rightsUnknown'):image.license));
   caption.append(source);
+  for(const alternative of image.alternatives || []) {
+    caption.append(link(t('alternative')+' · '+(alternative.source==='finna'?'Finna':'Wikimedia Commons'),alternative.original || alternative.url));
+    caption.append(text('small',[alternative.date,alternative.artist,alternative.license].filter(Boolean).join(' · ')));
+  }
   figure.append(photoPreview(image),caption);
   return figure;
 }
 function renderPhotos() {
   const chosen = decade.value ? Number(decade.value) : null;
-  const photos = data.photos.filter(({capture,locationEvidence,placeLabel})=>
+  const photos = selectedPhotos().filter(({capture,locationEvidence,placeLabel})=>
     (!locationFilter.value||locationFilter.value===placeLabel) &&
     (locationEvidence!=='title'||byId('include-uncertain').checked) &&
     (precision.value==='all'||precision.value===capture.precision) &&
@@ -180,7 +209,18 @@ function renderPhotos() {
   byId('photos').replaceChildren(...photos.slice(0,visibleLimit).map(photoCard));
   byId('more').hidden=photos.length<=visibleLimit;
 }
+function selectedPhotos() {
+  const source=byId('source').value;
+  return source==='all' ? data.photos : data.photos.flatMap(image=>{
+    const match=[image,...image.alternatives || []].find(item=>item.source===source);
+    return match ? [match] : [];
+  });
+}
+function renderSourceStatus() {
+  byId('source-status').textContent=t(data.availability.finna===false?'finnaFailed':'finnaScope');
+}
 function resetFilters() {
+  byId('source').value='all';
   decade.replaceChildren();
   precision.replaceChildren();
   locationFilter.replaceChildren();
@@ -195,6 +235,7 @@ function showResults() {
   detail.hidden=Boolean(region) || !place?.label || place.label===title;
   detail.textContent=detail.hidden?'':place.label;
   renderWiki(); renderFilters(); renderPhotos();
+  renderSourceStatus();
   byId('destination').hidden=false;
   setStatus(!data.availability.photos?'photoFailed':data.diagnostics.succeeded<data.diagnostics.commonsBatches?'partial':'');
 }
@@ -207,7 +248,7 @@ async function loadPlace(selected, keepFilters = false) {
   byId('destination').hidden = true;
   if (!keepFilters) resetFilters();
   try {
-    const response = await api('eras',{lat:place.lat,lon:place.lon,name:place.name,article:place.article||'',alias:place.alias,period:place.period,lang:language},signal);
+    const response = await api('eras',{lat:place.lat,lon:place.lon,name:place.name,article:place.article||'',alias:place.alias,period:place.period,lang:language,country:place.country || ''},signal);
     if(signal.aborted)return;
     data=response;
     showResults();
@@ -261,7 +302,7 @@ byId('search').addEventListener('submit',async event=>{
       const item=text('li','');
       const button=text('button',hit.label);
       button.type='button';
-      button.addEventListener('click',()=>loadPlace({ ...hit, alias:q, period }));
+      button.addEventListener('click',()=>loadPlace({ ...hit, alias:q, period, country:code }));
       item.append(button);
       byId('places').append(item);
     }
@@ -295,6 +336,7 @@ for (const filter of [precision,locationFilter,byId('include-uncertain')])filter
   renderPhotos();
 });
 byId('more').addEventListener('click',()=>{visibleLimit+=batchSize;renderPhotos();});
+byId('source').addEventListener('change',()=>{visibleLimit=batchSize;renderFilters();renderPhotos();});
 byId('query').value=(new URL(location.href).searchParams.get('q') || '').slice(0,120);
 setLanguage();
 setStatus('guide');
