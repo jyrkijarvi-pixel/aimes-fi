@@ -4,7 +4,7 @@ const labels = {
   fi: {
     source:'Lähde',allSources:'Kaikki',finnaCoordinates:'Sijaintiyhteys: Finnan kuvaustapahtuman koordinaatit.',finnaEventPlace:'Sijaintiyhteys: Finnan kuvaustapahtuman paikkatieto.',finnaSubject:'Sijaintiyhteys: arkiston aihepaikka. Tarkkaa kuvauspaikkaa ei ole varmennettu.',
     restricted:'Esikatselua ei näytetä, koska käyttöoikeus on rajoitettu tai epäselvä.',finnaFailed:'Finna-haku epäonnistui. Muiden lähteiden tulokset ovat käytettävissä.',finnaScope:'Finna: rajattu 36 tietueen otos. Ajoitukset perustuvat kuvaus- tai valmistustapahtumaan. Puuttuvasta kuvausajasta ei ehdoteta vuosikymmentä.',
-    alternative:'Sama kuva myös lähteessä',dateEvidence:'Arkiston alkuperäinen ajoitustieto',institution:'Kokoelmaorganisaatio',rightsUnknown:'Käyttöoikeutta ei ilmoitettu',
+    alternative:'Sama kuva myös lähteessä',dateEvidence:'Arkiston alkuperäinen ajoitustieto',institution:'Kokoelmaorganisaatio',rightsUnknown:'Käyttöoikeutta ei ilmoitettu',rightsDetails:'Lähteen käyttöoikeusohje',
     brand:'MAAILMAN TUTKIMINEN',nav:'AIMESin palvelut',gallery:'Historialliset kuvat',navEras:'Aikakaudet',stories:'Tarinat',radios:'Radiot',office:'Toimisto',discover:'Muut löydöt',
     home:'Kartta ja paikkahaku',title:'Historialliset aikakaudet',intro:'Hae historiallisia valokuvia maan, paikan tai ajan mukaan. Yksi rajaus riittää.',
     country:'Maa tai alue',place:'Paikkakunta (valinnainen)',period:'Vuosi tai vuosikymmen',periodExample:'1952 tai 1950-luku',find:'Hae',choose:'Kaikki maat',decade:'Vuosikymmen',precision:'Ajoitustarkkuus',location:'Sijainti aineistossa',more:'Näytä lisää',
@@ -21,7 +21,7 @@ const labels = {
   en: {
     source:'Source',allSources:'All',finnaCoordinates:'Location evidence: Finna capture-event coordinates.',finnaEventPlace:'Location evidence: Finna capture-event place.',finnaSubject:'Location evidence: archive subject place. The precise camera location is unverified.',
     restricted:'Preview withheld because image rights are restricted or unclear.',finnaFailed:'Finna search failed. Results from the other sources remain available.',finnaScope:'Finna: a limited sample of 36 records. Dating uses capture or creation events. A missing capture date cannot suggest a decade.',
-    alternative:'Same photograph also catalogued at',dateEvidence:'Original archive date statement',institution:'Collection institution',rightsUnknown:'Rights not specified',
+    alternative:'Same photograph also catalogued at',dateEvidence:'Original archive date statement',institution:'Collection institution',rightsUnknown:'Rights not specified',rightsDetails:'Usage instructions from the source',
     brand:'WORLD EXPLORER',nav:'AIMES services',gallery:'Historical photo gallery',navEras:'Historical eras',stories:'Stories',radios:'Radio',office:'Office',discover:'Discover',
     home:'Map and place search',title:'Historical eras',intro:'Find photographs by country, place or time. One search field is enough.',
     country:'Country or area',place:'Place (optional)',period:'Year or decade',periodExample:'1952 or 1950s',find:'Search',choose:'All countries',decade:'Decade',precision:'Dating precision',location:'Location in the source',more:'Show more',
@@ -182,11 +182,15 @@ function photoCard(image) {
     text('small',t(image.locationEvidence==='title'?'titleMatch':image.locationEvidence)));
   caption.append(text('small',image.source==='finna'?'Finna':'Wikimedia Commons'));
   if(image.institution)caption.append(text('small',t('institution')+' · '+image.institution));
-  if(image.dateEvidence)caption.append(text('small',t('dateEvidence')+' · '+image.dateEvidence));
+  if(image.dateEvidence && image.dateEvidence!==image.date)caption.append(text('small',t('dateEvidence')+' · '+image.dateEvidence));
   if(image.placeLabel)caption.append(text('small',image.placeLabel));
   if(image.lat!=null && image.lon!=null)caption.append(text('small',image.lat.toFixed(4)+', '+image.lon.toFixed(4)));
   if(image.scopeCategory)caption.append(link(t('sourceCategory'), 'https://commons.wikimedia.org/wiki/Category:'+encodeURIComponent(image.scopeCategory)));
-  if(image.restrictions)caption.append(text('small',image.restrictions));
+  if(image.restrictions) {
+    const instructions=text('details','');
+    instructions.append(text('summary',t('rightsDetails')),text('small',image.restrictions));
+    caption.append(instructions);
+  }
   const source = text('small','');
   source.append(link(t('photoSource'),image.original || image.url),document.createTextNode(' · '+t('license')+' '),
     image.licenseUrl?link(image.license,image.licenseUrl):document.createTextNode(image.license==='Unknown'?t('rightsUnknown'):image.license));
