@@ -181,7 +181,7 @@ async function articles(point, language = 'fi') {
 
 const mediaProps = {
   prop: 'imageinfo|coordinates', coprimary: 'all', iiprop: 'url|mime|extmetadata', iiurlwidth: '800',
-  iiextmetadatafilter: 'Artist|LicenseShortName|LicenseUrl|DateTimeOriginal|Categories|ObjectName|ImageDescription|Restrictions'
+  iiextmetadatafilter: 'Artist|LicenseShortName|LicenseUrl|DateTimeOriginal|Categories|ObjectName|ImageDescription|Restrictions|Credit|Source'
 };
 
 function plain(value) {
@@ -581,11 +581,15 @@ async function finnaResults(point,code,period,ctx) {
     countryNames.set(key,[...(countryNames.get(key) || []),id]);
   }
   const names=point ? commonsNames(point) : code ? countryLabels.get(code) || [] : [];
-  const response=await cached('finna:'+JSON.stringify({names,period}),()=>searchFinna({names,period}));
+  let requests=0;
+  const response=await cached('finna:'+JSON.stringify({names,period}),()=>{
+    requests++;
+    return searchFinna({names,period});
+  });
   const photos=response.records.map(record=>finnaPhoto(record,{
     point,names,code,countryNames,cities,boundary,withinCountry,distance,captureDate
   })).filter(Boolean);
-  return {photos,total:response.total,query:response.query,ms:response.ms,records:response.records.length};
+  return {photos,total:response.total,query:response.query,ms:response.ms,records:response.records.length,requests};
 }
 
 async function combinedEras(point,code,period,language,source,ctx) {
@@ -601,7 +605,7 @@ async function combinedEras(point,code,period,language,source,ctx) {
   return {
     ...base,...datedResults(joined.photos,period),
     availability:{...base.availability,photos:base.availability.photos || Boolean(finna.value),finna:source==='commons'?null:finna.status==='fulfilled'},
-    diagnostics:{...base.diagnostics,finnaRequests:source==='commons'?0:1,finnaTotal:finna.value?.total ?? null,
+    diagnostics:{...base.diagnostics,finnaRequests:finna.value?.requests ?? (source==='commons'?0:1),finnaTotal:finna.value?.total ?? null,
       finnaRecords:finna.value?.records ?? 0,finnaQuery:finna.value?.query || '',duplicates:joined.duplicates,
       serverMs:Date.now()-started}
   };
