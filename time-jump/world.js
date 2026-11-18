@@ -1,6 +1,7 @@
 'use strict';
 
 const tr=window.AimesLanguage.t;
+const uiError=error=>error.name==='TypeError'?tr('Pyyntö epäonnistui.'):error.message;
 const uiLanguage=window.AimesLanguage.language;
 window.AimesLanguage.apply();
 
@@ -358,7 +359,7 @@ async function travel(point, year = null, move = true) {
   } catch (error) {
     if (!request.signal.aborted) {
       byId('gallery-count').textContent = tr('Haku epäonnistui');
-      byId('travel-status').textContent = tr("Aineiston lataus epäonnistui. {0}", error.message);
+      byId('travel-status').textContent = tr("Aineiston lataus epäonnistui. {0}", uiError(error));
     }
     return false;
   }
@@ -468,7 +469,7 @@ byId('search').addEventListener('submit', async event => {
       : data.online ? tr('Paikkaa ei löytynyt. Kokeile toista nimeä tai valitse kartalta.')
       : tr('Verkkohaku ei vastannut, eikä nimeä löytynyt paikallisesta hakemistosta. Valitse kartalta tai anna koordinaatit.');
   } catch (error) {
-    if (!request.signal.aborted) byId('search-status').textContent = error.message;
+    if (!request.signal.aborted) byId('search-status').textContent = uiError(error);
   }
 });
 
@@ -602,7 +603,7 @@ function selectStation(index) {
   byId('explore-photo-title').textContent = photo.title;
   const coords = Number.isFinite(photo.lat) && Number.isFinite(photo.lon) ? ` · ${photo.locationApprox ? tr('Arvioitu kuvauspaikka') : tr('Kuvan paikkatieto')}: ${pointLabel(photo.lat, photo.lon)}` : '';
   const locationInfo = photo.locationEvidence === 'title' ? tr(' · Paikkayhteys otsikon perusteella; kuvauspaikka ei ole varmistettu') : coords;
-  byId('explore-photo-detail').textContent = tr("Lähteen ilmoittama kuvausaika: {0}{1} · {2}", photo.date || tr('ei tarkkaa päiväystä'), locationInfo, tr(photo.kind || tr('Kuva-aineisto')));
+  byId('explore-photo-detail').textContent = tr("Lähteen ilmoittama kuvausaika: {0}{1} · {2}", photo.date || tr('ei tarkkaa päiväystä'), locationInfo, tr(photo.kind || 'Kuva-aineisto'));
   byId('explore-authenticity').textContent = tr('LÄHDEAINEISTO · EI 3D-REKONSTRUKTIO');
   byId('selected-photo').hidden = false;
   byId('explore-counter').textContent = tr("{0} / {1} kuvauspistettä", index + 1, media.length);

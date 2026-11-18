@@ -107,4 +107,15 @@
     } else if(!anchor.getAttribute('href').startsWith('#'))anchor.href=localizedUrl(anchor.href).href;
   },true);
   document.addEventListener('DOMContentLoaded',()=>{decorateLinks();seo();},{once:true});
+  document.addEventListener('invalid',event=>{
+    const field=event.target;
+    if(!field.validity||field.validity.customError)return;
+    if(field.validity.valueMissing)field.setCustomValidity(language==='en'?'Please fill in this field.':'Täytä tämä kenttä.');
+    else if(field.validity.badInput||field.validity.rangeOverflow||field.validity.rangeUnderflow) {
+      field.setCustomValidity(language==='en'?'Enter a value within the indicated range.':'Anna arvo kentän sallimalta väliltä.');
+    }
+  },true);
+  document.addEventListener('input',event=>{
+    if(event.target.validity?.customError)event.target.setCustomValidity('');
+  });
 })();
