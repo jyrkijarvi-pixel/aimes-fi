@@ -31,7 +31,14 @@ test('Finna evidence, rights, periods, caching and failure isolation',async()=>{
       if(fail)throw Error('Finna unavailable');
       return Response.json({status:'OK',resultCount:records.length,records});
     }
-    return Response.json({query:{pages:[]}});
+    return Response.json({query:{pages:[{
+      title:'File:Photograph.jpg',coordinates:[{lat:60.4,lon:25.1,globe:'earth'}],
+      imageinfo:[{mime:'image/jpeg',thumburl:'https://upload.wikimedia.org/example.jpg',
+        descriptionurl:'https://commons.wikimedia.org/wiki/File:Photograph.jpg',extmetadata:{
+          Artist:{value:'Photographer'},LicenseShortName:{value:'CC BY 4.0'},
+          DateTimeOriginal:{value:'1952'},Credit:{value:'https://www.finna.fi/Record/test.circa'}
+        }}]
+    }]}});
   };
   async function request(params) {
     const response=await onRequest({
@@ -60,6 +67,10 @@ test('Finna evidence, rights, periods, caching and failure isolation',async()=>{
     const year=await request({country:'FI',source:'finna',period:'1952'});
     assert.equal(year.photos.length,2);
     assert.ok(year.photos.every(photo=>photo.capture.precision==='exact'&&photo.capture.start===1952));
+    const combinedYear=await request({country:'FI',period:'1952'});
+    assert.ok(combinedYear.photos.some(photo=>photo.source==='commons'&&photo.finnaIds.includes('test.circa')));
+    assert.ok(!combinedYear.photos.flatMap(photo=>[photo,...photo.alternatives || []])
+      .some(photo=>photo.source==='finna'&&photo.finnaIds?.includes('test.circa')));
     fail=true;
     const fallback=await request({country:'FI',period:'1950s'});
     assert.equal(fallback.availability.finna,false);

@@ -588,7 +588,7 @@ async function finnaResults(point,code,period,ctx) {
   });
   const photos=response.records.map(record=>finnaPhoto(record,{
     point,names,code,countryNames,cities,boundary,withinCountry,distance,captureDate
-  })).filter(Boolean);
+  })).filter(Boolean).filter(image=>inPeriod(image.capture,period));
   return {photos,total:response.total,query:response.query,ms:response.ms,records:response.records.length,requests};
 }
 
