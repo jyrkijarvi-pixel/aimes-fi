@@ -17,3 +17,12 @@
 /time-jump/*
   ! Referrer-Policy
   Referrer-Policy: strict-origin-when-cross-origin
+/en/
+  ! Referrer-Policy
+  Referrer-Policy: strict-origin-when-cross-origin
+/en/index.html
+  ! Referrer-Policy
+  Referrer-Policy: strict-origin-when-cross-origin
+/en/time-jump/*
+  ! Referrer-Policy
+  Referrer-Policy: strict-origin-when-cross-origin
