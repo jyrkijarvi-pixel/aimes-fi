@@ -1,5 +1,63 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://aimes.fi/</loc><lastmod>2026-10-31</lastmod></url>
-  <url><loc>https://aimes.fi/en/</loc><lastmod>2026-10-31</lastmod></url>
-<url><loc>https://aimes.fi/toimisto/</loc></url><url><loc>https://aimes.fi/en/toimisto/</loc></url></urlset>
+<?xml version='1.0' encoding='utf-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://aimes.fi/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/en/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/aimes-vanha</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/aimes-vanha" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/aimes-vanha" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/aimes-vanha" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/en/aimes-vanha</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/aimes-vanha" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/aimes-vanha" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/aimes-vanha" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/toimisto/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/toimisto/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/toimisto/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/toimisto/" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/en/toimisto/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/toimisto/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/toimisto/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/toimisto/" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/time-jump/eras/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/time-jump/eras/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/time-jump/eras/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/time-jump/eras/" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/en/time-jump/eras/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/time-jump/eras/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/time-jump/eras/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/time-jump/eras/" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/time-jump/helsinki-1952-photo/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/time-jump/helsinki-1952-photo/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/time-jump/helsinki-1952-photo/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/time-jump/helsinki-1952-photo/" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/en/time-jump/helsinki-1952-photo/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/time-jump/helsinki-1952-photo/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/time-jump/helsinki-1952-photo/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/time-jump/helsinki-1952-photo/" />
+  </url>
+</urlset>

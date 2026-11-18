@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<base href="/en/time-jump/helsinki-1952-photo/">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101b1b">
+
+<link rel="stylesheet" href="photo.css">
+<script defer src="photo.js"></script>
+<title>Beside the Cholera Basin · AIMES TIME JUMP</title>
+<meta name="description" data-fi="Tutki Helsingin Kauppatoria aidossa 1950-luvun arkistokuvassa ja vertaa sitä vuoden 1952 lähteisiin." data-en="Explore Helsinki Market Square in an authentic 1950s photograph and compare it with sources from 1952." content="Explore Helsinki Market Square in an authentic 1950s photograph and compare it with sources from 1952.">
+<link rel="canonical" href="https://aimes.fi/en/time-jump/helsinki-1952-photo/" data-fi="https://aimes.fi/time-jump/helsinki-1952-photo/" data-en="https://aimes.fi/en/time-jump/helsinki-1952-photo/">
+<link rel="alternate" hreflang="fi" href="https://aimes.fi/time-jump/helsinki-1952-photo/">
+<link rel="alternate" hreflang="en" href="https://aimes.fi/en/time-jump/helsinki-1952-photo/">
+<link rel="alternate" hreflang="x-default" href="https://aimes.fi/time-jump/helsinki-1952-photo/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://aimes.fi/en/time-jump/helsinki-1952-photo/">
+<meta property="og:title" content="Beside the Cholera Basin · AIMES TIME JUMP">
+<meta property="og:description" content="Explore Helsinki Market Square in an authentic 1950s photograph and compare it with sources from 1952.">
+<meta property="og:image" content="https://aimes.fi/time-jump/data/helsinki-1952-archive.jpg">
+<meta property="og:image:alt" content="Helsinki Olympics in 1952">
+<meta property="og:locale" content="en_GB">
+<meta property="og:locale:alternate" content="fi_FI">
+<meta property="og:site_name" content="AIMES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Beside the Cholera Basin · AIMES TIME JUMP">
+<meta name="twitter:description" content="Explore Helsinki Market Square in an authentic 1950s photograph and compare it with sources from 1952.">
+<meta name="twitter:image" content="https://aimes.fi/time-jump/data/helsinki-1952-archive.jpg">
+<meta name="twitter:image:alt" content="Helsinki Olympics in 1952">
+<link rel="stylesheet" href="/language.css">
+<script src="/time-jump/translations.js"></script>
+<script src="/language.js"></script>
+</head>
+<body><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="masthead"><a href="/en/" class="brand">AIMES <span>TIME JUMP</span></a><a href="#lahteet">Images and sources</a><div class="language-links" role="group" aria-label="Language"><a href="?lang=fi" data-language="fi" lang="fi">FI</a><a href="?lang=en" data-language="en" lang="en">EN</a></div></header>
+<main id="main-content" tabindex="-1">
+  <section class="experience" aria-labelledby="title">
+    <div class="viewport" id="viewport">
+      <div class="photograph" id="photograph">
+        <img id="hero-photo" src="kolera-allas.webp" width="1200" height="793" fetchpriority="high" alt="Old wooden boats in the Cholera Basin, with Market Square stalls and the pale facade of Helsinki City Hall behind.">
+        <div class="middle depth-layer" aria-hidden="true"></div>
+        <div class="foreground depth-layer" aria-hidden="true"></div>
+      </div>
+      <div class="markers" id="markers" hidden aria-label="Kuvan kohteet">
+        <button class="marker" type="button" data-spot="city" aria-label="City Hall">1</button>
+        <button class="marker" type="button" data-spot="market" aria-label="Market stalls">2</button>
+        <button class="marker" type="button" data-spot="boats" aria-label="Boats in the Cholera Basin">3</button>
+      </div>
+      <aside class="spot-note" id="spot-note" tabindex="-1" aria-labelledby="spot-title" hidden>
+        <button id="close-spot" type="button" aria-label="Close information point">×</button>
+        <h2 id="spot-title"></h2>
+        <p id="spot-description"></p>
+        <a id="spot-source" href="#lahteet">View source</a>
+      </aside>
+      <div class="original" id="original" aria-hidden="true" hidden>
+        <div class="original-photo"></div>
+      </div>
+      <div class="compare-labels" id="compare-labels" hidden><span>Original archive photograph</span><span>Depth interpretation</span></div>
+      <div class="intro" id="intro">
+        <p class="eyebrow">HELSINKI · AROUND THE OLYMPIC SUMMER</p>
+        <h1 id="title">Beside the<br> Cholera Basin</h1>
+        <p class="intro-credit">Arvo Kajantie · Helsinki City Museum · 1950–1959</p>
+      </div>
+      <p id="notice" class="notice" role="status" hidden></p>
+      <noscript><p class="notice">You can view the photograph and read the sources. Depth controls require JavaScript.</p></noscript>
+      <div id="comparison" class="comparison" hidden>
+        <label for="reveal">Archive photograph share</label>
+        <input id="reveal" type="range" min="0" max="100" value="50">
+        <button type="button" id="close-compare">Close</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-copy">
+        <p id="instruction">Drag the image or use the arrow keys. Zoom in with the plus button.</p>
+        <p class="muted">Kajantie's photograph is from the 1950s. Dilén's photograph and the visitor map add material from 1952.</p>
+      </div>
+      <div class="actions" id="actions" hidden>
+        <button type="button" id="zoom-out" aria-label="Zoom out" disabled>−</button>
+        <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" id="reset">Starting view</button>
+        <button type="button" id="lite" aria-pressed="false" aria-label="Lightweight 2D mode">2D</button>
+        <button type="button" id="compare" aria-pressed="false" aria-controls="comparison">Compare with the archive photograph</button>
+      </div>
+      <div class="spot-links" id="spot-links" hidden aria-label="Explore features in the photograph">
+        <button type="button" data-spot="city">1 · City Hall</button>
+        <button type="button" data-spot="market">2 · Market stalls</button>
+        <button type="button" data-spot="boats">3 · Boats</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="context" aria-labelledby="details-title">
+    <h2 id="details-title">What can you see in the photograph?</h2>
+    <div class="facts">
+      <details><summary>City Hall</summary><p>The pale three-storey facade borders the square to the north. The building originally housed the Seurahuone hotel. Dilén’s photograph from 1952 shows the low columned entrance canopy.</p><p><a href="https://historia.hel.fi/fi/ilmiot/vallankayttoa-ja-hallintoa/kaupungintalo">History of City Hall · City of Helsinki</a></p></details>
+      <details><summary>Market stalls and wooden boats</summary><p>Kajantie’s photograph shows boats filling the basin and stalls along the square. According to the City of Helsinki, fishermen also sold their catch directly from their boats.</p><p><a href="https://historia.hel.fi/fi/alueet/etelainen/esplanadit-ja-kauppatori-kaupungin-sykkiva-sydan">History of the market · City of Helsinki</a></p></details>
+      <details><summary>Market Square in 1952</summary><p>The visitor map shows the square between South Harbour, Esplanadi and Senate Square. Both the map and Dilén’s photograph date from 1952.</p><p><a href="#lahteet">View the map and photographs</a></p></details>
+    </div>
+  </section>
+
+  <section class="context sources" id="lahteet" aria-labelledby="source-title">
+    <h2 id="source-title">Images and sources</h2>
+    <p>The buildings, people, stalls and boats come from Kajantie’s photograph. Depth layers and gentle camera movement are interpretations. Zooming enlarges the same pixels. Areas hidden in the original remain hidden.</p>
+    <div class="facts">
+      <details>
+        <summary>Cholera Basin, original photograph</summary>
+        <figure><img src="kolera-allas.webp" width="1200" height="793" loading="lazy" alt="Cholera Basin, wooden boats and Market Square in the 1950s."><figcaption>Arvo Kajantie / Helsinki City Museum · 1950–1959 · <a href="https://hkm.finna.fi/Record/hkm.87455276-66CB-47DF-98AF-DF2A3EA7C062">Finna</a> · <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark</a></figcaption></figure>
+      </details>
+      <details>
+        <summary>City Hall in 1952</summary>
+        <figure><img src="kaupungintalo-1952.webp" width="1186" height="1200" loading="lazy" alt="City Hall and Market Square in Börje Dilén’s black-and-white photograph."><figcaption>Börje Dilén / Helsinki City Museum · 1952 · <a href="https://www.finna.fi/Record/hkm.429E061A-83E3-4F8C-AFE2-AACC8CA07B86">Finna</a> · <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark</a></figcaption></figure>
+      </details>
+      <details>
+        <summary>Visitor map from 1952</summary>
+        <figure><img src="opaskartta-1952.webp" width="1000" height="900" loading="lazy" alt="A 1952 map excerpt of Helsinki Market Square, the harbour and Senate Square."><figcaption>Cropped excerpt · Helsinki City Executive Office · <a href="https://avoindata.suomi.fi/data/dataset/helsingin-historialliset-opaskartat">Historical visitor maps of Helsinki</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></figcaption></figure>
+      </details>
+    </div>
+  </section>
+</main>
+</body>
+</html>

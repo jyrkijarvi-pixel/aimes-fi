@@ -2,15 +2,42 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
+<base href="/time-jump/">
+
+
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0a171a">
-<title>AIMES – tutki maailmaa ja sen historiaa</title>
+
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="style.css">
 <script defer src="vendor/leaflet.js"></script>
 <script defer src="world.js"></script>
+<link rel="stylesheet" href="/language.css">
+<script src="/time-jump/translations.js"></script>
+<script src="/language.js"></script>
+<title>AIMES – tutki maailmaa ja sen historiaa</title>
+<meta name="description" content="Tutki maailmankarttaa, paikkoja, valokuvia ja historiallisia lähteitä. Löydä aikakaudet, tarinat, radiot ja Helsinki 1952.">
+<link rel="canonical" href="https://aimes.fi/" data-fi="https://aimes.fi/" data-en="https://aimes.fi/en/">
+<link rel="alternate" hreflang="fi" href="https://aimes.fi/">
+<link rel="alternate" hreflang="en" href="https://aimes.fi/en/">
+<link rel="alternate" hreflang="x-default" href="https://aimes.fi/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://aimes.fi/">
+<meta property="og:title" content="AIMES – tutki maailmaa ja sen historiaa">
+<meta property="og:description" content="Tutki maailmankarttaa, paikkoja, valokuvia ja historiallisia lähteitä. Löydä aikakaudet, tarinat, radiot ja Helsinki 1952.">
+<meta property="og:image" content="https://aimes.fi/time-jump/data/helsinki-1952-archive.jpg">
+<meta property="og:image:alt" content="Helsinki Olympics in 1952">
+<meta property="og:locale" content="fi_FI">
+<meta property="og:locale:alternate" content="en_GB">
+<meta property="og:site_name" content="AIMES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AIMES – tutki maailmaa ja sen historiaa">
+<meta name="twitter:description" content="Tutki maailmankarttaa, paikkoja, valokuvia ja historiallisia lähteitä. Löydä aikakaudet, tarinat, radiot ja Helsinki 1952.">
+<meta name="twitter:image" content="https://aimes.fi/time-jump/data/helsinki-1952-archive.jpg">
+<meta name="twitter:image:alt" content="Helsinki Olympics in 1952">
 </head>
 <body>
+<a class="skip-link" href="#main-content">Siirry sisältöön</a>
 <header class="top">
   <a class="brand" href="/">AIMES <span>MAAILMAN TUTKIMINEN</span></a>
   <nav class="aimes-nav" aria-label="AIMESin palvelut">
@@ -23,9 +50,10 @@
     <a href="/toimisto/">Toimisto</a>
     <a href="/aimes-vanha#loyda">Muut löydöt</a>
   </nav>
+<div class="language-links" role="group" aria-label="Kieli"><a aria-current="page" data-language="fi" lang="fi" hreflang="fi" href="/?lang=fi">FI</a><a data-language="en" lang="en" hreflang="en" href="/en/?lang=en">EN</a></div>
   <button class="outline" id="back" type="button" hidden>← Maailmankartalle</button>
 </header>
-<main>
+<main id="main-content" tabindex="-1">
   <div class="atlas" id="atlas">
     <section class="map-panel" aria-label="Maailmankartta">
       <div id="street-map" aria-label="Nykyinen katukartta" hidden></div>
@@ -101,6 +129,43 @@
       <p class="fine map-links"><a id="street" href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">Avaa nykyinen katukartta OpenStreetMapissa ↗</a></p>
     </section>
   </div>
+  <section class="time-jump-cards" aria-label="Kolme tapaa tutkia historiaa">
+    <article class="time-jump-card">
+      <figure>
+        <img src="data/helsinki-1952-archive.jpg" alt="Yleisöä ja esiintyjiä Helsingin olympialaisten avajaisissa vuonna 1952.">
+        <figcaption>Aito arkistokuva</figcaption>
+      </figure>
+      <div class="time-jump-card-copy">
+        <h2>Oikea historia</h2>
+        <p>Tutki maailman paikkoja oikeiden historiallisten kuvien, karttojen ja lähteiden avulla.</p>
+        <a class="time-jump-card-action" href="/#query">Etsi paikka <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="time-jump-card">
+      <figure>
+        <img src="data/gallery-preview.webp" alt="TIME JUMPin kuvanäkymä, jossa olympialaisten avajaiskuvaa voi suurentaa.">
+        <figcaption>Kuvagallerian esimerkki</figcaption>
+      </figure>
+      <div class="time-jump-card-copy">
+        <h2>Kulje kuvissa</h2>
+        <p>Valitse paikka ja aikakausi. Tutki kuvia, yksityiskohtia ja niiden tarinoita.</p>
+        <button class="time-jump-card-action" id="home-gallery" type="button">Avaa kuvagalleria <span aria-hidden="true">→</span></button>
+      </div>
+    </article>
+    <article class="time-jump-card">
+      <figure>
+        <img src="helsinki-1952-photo/kolera-allas.webp" alt="Arvo Kajantien historiallinen valokuva Helsingin Kauppatorista 1950-luvulla.">
+        <figcaption>Aito arkistokuva · Arvo Kajantie</figcaption>
+      </figure>
+      <div class="time-jump-card-copy">
+        <h2>Valokuvallinen aikamatka</h2>
+        <p>Tutki mennyttä Helsinkiä aidossa arkistokuvassa. Tämä kokeellinen aikamatka vie 1950-luvun Kauppatorille.</p>
+        <small>Arvo Kajantie / Helsingin kaupunginmuseo · 1950–1959. Syvyys ja kameraliike ovat tulkintaa.</small>
+        <a class="time-jump-card-action" href="helsinki-1952-photo/">Avaa kokeellinen aikamatka <span aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <p class="time-jump-cards-credit">Arkistokuva ja sama kuva galleriassa: Olympia-kuva Oy / Helsingin kaupunginmuseo · <a href="https://www.finna.fi/Record/hkm.HKMS000005:km0000mrdm">Kuvan lähde</a> · Public Domain</p>
+  </section>
   <section id="explorer" class="explorer" aria-label="Paikan tutkimustila" hidden>
     <header class="explorer-header">
       <div>

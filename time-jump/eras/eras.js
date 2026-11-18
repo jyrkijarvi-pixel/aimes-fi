@@ -49,7 +49,7 @@ const precision = byId('precision');
 const locationFilter = byId('location');
 const periodInput = byId('period');
 const batchSize = 18;
-let language = new URL(location.href).searchParams.get('lang') === 'en' ? 'en' : 'fi';
+let language = window.AimesLanguage.language;
 let countries = [];
 let place;
 let data;
@@ -336,10 +336,13 @@ byId('search').addEventListener('submit',async event=>{
 });
 byId('language').addEventListener('click',()=>{
   language=language==='fi'?'en':'fi';
-  const url=new URL(location.href);
+  window.AimesLanguage.remember(language);
+  const url=window.AimesLanguage.localizedUrl(location.href,language);
   url.searchParams.set('lang',language);
   history.replaceState(null,'',url);
   setLanguage();
+  window.AimesLanguage.decorateLinks();
+  window.AimesLanguage.seo();
   if (place && !byId('destination').hidden && data) {
     renderFilters();
     renderPhotos();
