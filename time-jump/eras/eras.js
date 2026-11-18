@@ -369,9 +369,9 @@ byId('more').addEventListener('click',async()=>{
   try {
     const response=await api('era-finna',{...searchParameters(),page:snapshot.pagination.finna.nextPage},signal);
     if(signal.aborted||data!==snapshot)return;
-    const order=new Map(snapshot.photos.map((photo,index)=>[photo.url,index]));
+    const order=new Map(snapshot.photos.map((photo,index)=>[photo.original || photo.url,index]));
     data.photos=combinePhotos(data.photos,response.photos).photos
-      .sort((a,b)=>(order.get(a.url)??Number.MAX_SAFE_INTEGER)-(order.get(b.url)??Number.MAX_SAFE_INTEGER));
+      .sort((a,b)=>(order.get(a.original || a.url)??Number.MAX_SAFE_INTEGER)-(order.get(b.original || b.url)??Number.MAX_SAFE_INTEGER));
     data.pagination=response.pagination;
     visibleLimit+=batchSize;
     renderFilters();
