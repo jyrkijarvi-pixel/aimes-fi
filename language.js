@@ -43,7 +43,13 @@
   function decorateLinks() {
     document.querySelectorAll('a[href]').forEach(anchor=>{
       const raw=anchor.getAttribute('href');
-      if(raw.startsWith('#')||anchor.matches('[data-language],.languages a,.language'))return;
+      if(raw.startsWith('#')) {
+        const target=new URL(location.href);
+        target.hash=raw;
+        anchor.href=target.href;
+        return;
+      }
+      if(anchor.matches('[data-language],.languages a,.language'))return;
       const target=localizedUrl(anchor.href);
       if(target.origin===location.origin)anchor.href=target.href;
     });
@@ -64,6 +70,9 @@
     ]) {
       const meta=document.querySelector(selector);
       if(meta&&value)meta.content=value;
+    }
+    for(const meta of document.querySelectorAll('meta[property="og:image:alt"],meta[name="twitter:image:alt"]')) {
+      meta.content=language==='en'?'Helsinki Olympics in 1952':'Helsingin olympialaisten avajaiset vuonna 1952';
     }
   }
   function apply(root=document.body) {
@@ -104,7 +113,11 @@
       const target=localizedUrl(anchor.href,next);
       target.searchParams.set('lang',next);
       anchor.href=target.href;
-    } else if(!anchor.getAttribute('href').startsWith('#'))anchor.href=localizedUrl(anchor.href).href;
+    } else {
+      const target=new URL(anchor.href);
+      if(target.origin===location.origin&&target.pathname===location.pathname&&target.search===location.search&&target.hash)return;
+      anchor.href=localizedUrl(anchor.href).href;
+    }
   },true);
   document.addEventListener('DOMContentLoaded',()=>{decorateLinks();seo();},{once:true});
   document.addEventListener('invalid',event=>{

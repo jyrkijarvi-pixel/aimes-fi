@@ -1,6 +1,7 @@
 'use strict';
 
 const tr=window.AimesLanguage.t;
+const uiCreator=value=>['Tekijää ei ilmoitettu','Tekijä tuntematon'].includes(value)?tr(value):value;
 const uiError=error=>error.name==='TypeError'?tr('Pyyntö epäonnistui.'):error.message;
 const uiLanguage=window.AimesLanguage.language;
 window.AimesLanguage.apply();
@@ -208,7 +209,7 @@ function renderPhoto() {
   const preview = byId('photo-image');
   preview.alt = image.title;
   const caption = byId('photo-credit');
-  caption.replaceChildren(text('strong', image.title), document.createTextNode(`${image.artist} · `));
+  caption.replaceChildren(text('strong', image.title), document.createTextNode(`${uiCreator(image.artist)} · `));
   caption.append(image.licenseUrl ? link(image.license, image.licenseUrl) : document.createTextNode(image.license));
   if (image.date) caption.append(document.createTextNode(tr(" · Kuvausaika lähteen mukaan: {0}", image.date)));
   if (image.locationEvidence === 'title') caption.append(document.createTextNode(tr(' · Paikkayhteys: nimi tai otsikko; tarkkaa kuvauspaikkaa ei vahvistettu')));
@@ -542,7 +543,7 @@ function safeCredit(image) {
   const credit = byId('explore-credit');
   credit.replaceChildren();
   if (!image) return;
-  credit.append(document.createTextNode(`${image.artist || tr('Tekijä tuntematon')} · ${image.license || tr('Lisenssi tarkistettava')} · `));
+  credit.append(document.createTextNode(`${uiCreator(image.artist) || tr('Tekijä tuntematon')} · ${image.license || tr('Lisenssi tarkistettava')} · `));
   if (image.url) credit.append(link(tr('Alkuperäinen aineisto Wikimedia Commonsissa ↗'), image.url));
   if (image.licenseUrl) credit.append(document.createTextNode(' · '), link(tr('Lisenssi ↗'), image.licenseUrl));
   if (image.original) credit.append(document.createTextNode(' · '), link(tr('Museon alkuperäinen tietue ↗'), image.original));
