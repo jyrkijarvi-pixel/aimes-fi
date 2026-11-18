@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { onRequest } from '../functions/time-jump/api/[[path]].js';
 import { combinePhotos } from '../functions/time-jump/finna.js';
+import { searchFinna, diversifyPhotos, finnaPhoto } from '../functions/time-jump/finna.js';
 
 const photograph=(id,date,place='Suomi, Kerava',copyright='CC BY 4.0')=>({
   id,title:'Test photograph',year:'1952',formats:[{value:'1/Image/Photo/'}],
@@ -63,7 +64,7 @@ test('Finna evidence, rights, periods, caching and failure isolation',async()=>{
     assert.ok(find('test.restricted').original.includes('finna.fi/Record/'));
     assert.ok(result.decades.some(row=>row.decade===1930&&row.approximate===1));
     await request({country:'FI',source:'finna'});
-    assert.equal(requests,1);
+    assert.equal(requests,2);
     const year=await request({country:'FI',source:'finna',period:'1952'});
     assert.equal(year.photos.length,2);
     assert.ok(year.photos.every(photo=>photo.capture.precision==='exact'&&photo.capture.start===1952));
@@ -77,6 +78,72 @@ test('Finna evidence, rights, periods, caching and failure isolation',async()=>{
     assert.ok(fallback.photos.some(photo=>photo.capture.start===1954));
     assert.equal(fallback.diagnostics.succeeded,2);
   } finally {globalThis.fetch=nativeFetch;}
+});
+
+test('Geographic and text streams paginate, deduplicate and retry a partially failed batch',async()=>{
+  const original=globalThis.fetch;
+  let failGeo=true;
+  let calls=0;
+  const cache=new Map();
+  const cached=async(key,load)=>{
+    if(cache.has(key))return cache.get(key);
+    const result=await load();
+    cache.set(key,result);
+    return result;
+  };
+  globalThis.fetch=async address=>{
+    calls++;
+    const url=new URL(address);
+    assert.equal(url.searchParams.get('limit'),'24');
+    const geographic=url.searchParams.get('lookfor').startsWith('geographic:');
+    if(geographic&&failGeo)throw Error('Temporary geographic search failure');
+    const page=Number(url.searchParams.get('page'));
+    return Response.json({status:'OK',resultCount:48,records:Array.from({length:24},(_,index)=>({
+      id:'record.'+((page-1)*24+index),title:'Archive photograph'
+    }))});
+  };
+  try {
+    const partial=await searchFinna({names:['Example place'],cached});
+    assert.equal(partial.partial,true);
+    assert.equal(partial.nextPage,1);
+    assert.equal(partial.records.length,24);
+    failGeo=false;
+    const first=await searchFinna({names:['Example place'],cached});
+    assert.equal(first.nextPage,2);
+    assert.equal(first.requests,1);
+    assert.equal(first.records.length,24);
+    const second=await searchFinna({names:['Example place'],page:2,cached});
+    assert.equal(second.nextPage,null);
+    assert.equal(second.records[0].id,'record.24');
+    assert.equal(second.requests,2);
+    await searchFinna({names:['Example place'],page:2,cached});
+    assert.equal(calls,5);
+  } finally {globalThis.fetch=original;}
+});
+
+test('Topic ordering retains all records and reduces consecutive photographs of one subject',()=>{
+  const photos=[
+    ...Array.from({length:12},(_,index)=>({url:'church'+index,title:'Village church',src:'preview'})),
+    {url:'weaving',title:'Mattojen kudontaa',src:'preview'},
+    {url:'portrait',title:'Portrait',src:null},
+    {url:'school',title:'School',subjects:['koulut'],src:'preview'}
+  ];
+  const ordered=diversifyPhotos(photos);
+  assert.equal(ordered.length,photos.length);
+  assert.equal(new Set(ordered.map(photo=>photo.url)).size,photos.length);
+  assert.equal(ordered.slice(0,4).filter(photo=>photo.topic==='religion').length,1);
+});
+
+test('Municipality place metadata accepts rural archive points and rejects conflicting towns',()=>{
+  const record=photograph('rural.photo','1954','Suomi, Example municipality');
+  record.rawData.location_geo=['POINT(23.6 61.2)'];
+  const options={point:{lat:61,lon:23},names:['Example municipality'],code:'FI',
+    countryNames:new Map([['suomi',['FI']]]),cities:{},boundary:{},
+    withinCountry:()=>true,distance:()=>22000,captureDate:()=>({precision:'exact',start:1954,end:1954})};
+  assert.ok(finnaPhoto(record,options));
+  const conflicting=photograph('wrong.photo','1954','Suomi, Other town, Example municipality');
+  conflicting.rawData.location_geo=['POINT(23.6 61.2)'];
+  assert.equal(finnaPhoto(conflicting,{...options,cities:{'other town':['FI']}}),null);
 });
 
 test('Shared Finna identifiers merge records and preserve alternate metadata',()=>{

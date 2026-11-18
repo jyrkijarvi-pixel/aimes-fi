@@ -1,7 +1,7 @@
 'use strict';
 
 import { parsePeriod, inPeriod } from '../../../time-jump/eras/period.js';
-import { searchFinna, finnaPhoto, combinePhotos } from '../finna.js';
+import { searchFinna, finnaPhoto, combinePhotos, diversifyPhotos } from '../finna.js';
 
 const ua = 'AIMESWorldExplorer/0.3 (+https://aimes.fi/time-jump/)';
 const configuredSearch = 'https://nominatim.openstreetmap.org/search';
@@ -566,14 +566,16 @@ async function regionalEras(code,period,ctx) {
   };
 }
 
-async function finnaResults(point,code,period,ctx) {
+async function finnaResults(point,code,period,ctx,page=1) {
   await ensureCountries(ctx);
   if (!regionCityLabels) regionCityLabels=assetJson(ctx,'era-city-labels.json').catch(error=>{regionCityLabels=null;throw error;});
   const cities=await regionCityLabels;
   let boundary;
-  if (code) {
+  if (code || point) {
     if (!boundaries) boundaries=assetJson(ctx,'world.json').catch(error=>{boundaries=null;throw error;});
-    boundary=(await boundaries).features.find(feature=>feature.properties.code===code)?.geometry;
+    const world=await boundaries;
+    if(!code)code=world.features.find(feature=>withinCountry(point,feature.geometry))?.properties.code || '';
+    boundary=world.features.find(feature=>feature.properties.code===code)?.geometry;
   }
   const countryNames=new Map();
   for (const [id,names] of countryLabels) for (const name of names) {
@@ -581,15 +583,13 @@ async function finnaResults(point,code,period,ctx) {
     countryNames.set(key,[...(countryNames.get(key) || []),id]);
   }
   const names=point ? commonsNames(point) : code ? countryLabels.get(code) || [] : [];
-  let requests=0;
-  const response=await cached('finna:'+JSON.stringify({names,period}),()=>{
-    requests++;
-    return searchFinna({names,period});
-  });
+  const response=await searchFinna({names,period,page,cached});
   const photos=response.records.map(record=>finnaPhoto(record,{
     point,names,code,countryNames,cities,boundary,withinCountry,distance,captureDate
   })).filter(Boolean).filter(image=>inPeriod(image.capture,period));
-  return {photos,total:response.total,query:response.query,ms:response.ms,records:response.records.length,requests};
+  return {photos,total:response.total,query:response.query,ms:response.ms,records:response.records.length,
+    requests:response.requests,queries:response.queries,
+    pagination:{page:response.page,nextPage:response.nextPage,partial:response.partial}};
 }
 
 async function combinedEras(point,code,period,language,source,ctx) {
@@ -603,10 +603,11 @@ async function combinedEras(point,code,period,language,source,ctx) {
   const base=commons.value || {photos:[],wiki:{main:null,nearby:[]},availability:{photos:false,wiki:false},diagnostics:{commonsBatches:0,succeeded:0}};
   const joined=combinePhotos(base.photos,finna.value?.photos || []);
   return {
-    ...base,...datedResults(joined.photos,period),
+    ...base,...datedResults(diversifyPhotos(joined.photos),period),
+    pagination:{finna:finna.value?.pagination || null},
     availability:{...base.availability,photos:base.availability.photos || Boolean(finna.value),finna:source==='commons'?null:finna.status==='fulfilled'},
     diagnostics:{...base.diagnostics,finnaRequests:finna.value?.requests ?? (source==='commons'?0:1),finnaTotal:finna.value?.total ?? null,
-      finnaRecords:finna.value?.records ?? 0,finnaQuery:finna.value?.query || '',duplicates:joined.duplicates,
+      finnaRecords:finna.value?.records ?? 0,finnaQuery:finna.value?.query || '',finnaQueries:finna.value?.queries || [],duplicates:joined.duplicates,
       serverMs:Date.now()-started}
   };
 }
@@ -642,7 +643,9 @@ export async function onRequest(ctx) {
       if(country && !/^[A-Z]{2}$/.test(country))return respond({error:'Virheellinen maatunnus.'},400);
       return respond(await search(q,ctx,country));
     }
-    if(route==='eras' || route==='era-wiki') {
+    if(route==='eras' || route==='era-wiki' || route==='era-finna') {
+      const page=Number(url.searchParams.get('page') || '1');
+      if(!Number.isInteger(page)||page<1||page>4166)return respond({error:'Virheellinen sivu.'},400);
       const source=url.searchParams.get('source') || 'all';
       if (!['all','commons','finna'].includes(source))return respond({error:'Virheellinen lähde.'},400);
       const language = url.searchParams.get('lang')==='en'?'en':'fi';
@@ -651,6 +654,15 @@ export async function onRequest(ctx) {
       catch { return respond({error:'Virheellinen aikarajaus.'},400); }
       const code = (url.searchParams.get('country') || '').toUpperCase();
       if (code && (!/^[A-Z]{2}$/.test(code)||!englishRegions.of(code)))return respond({error:'Virheellinen maatunnus.'},400);
+      if(route==='era-finna') {
+        const hasPoint=url.searchParams.has('lat')||url.searchParams.has('lon');
+        const point=hasPoint?parsePoint(url.searchParams):null;
+        if((hasPoint&&(!point||!point.name||point.kind==='country'))||(!hasPoint&&!code&&!period))return respond({error:'Valitse paikka tai rajaus.'},400);
+        const result=await finnaResults(point&&{...point,alias:(url.searchParams.get('alias') || '').slice(0,45)},code,period,ctx,page);
+        const joined=combinePhotos([],result.photos);
+        return respond({...datedResults(diversifyPhotos(joined.photos),period),pagination:{finna:result.pagination},
+          diagnostics:{finnaRequests:result.requests,finnaRecords:result.records,finnaQueries:result.queries,duplicates:joined.duplicates}});
+      }
       if (route==='eras' && !url.searchParams.has('lat') && !url.searchParams.has('lon') && (code || period)) {
         return respond(await combinedEras(null,code,period,language,source,ctx));
       }

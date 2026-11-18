@@ -1,10 +1,12 @@
 import { parsePeriod } from './period.js';
+import { combinePhotos } from './media.js';
 
 const labels = {
   fi: {
     finnaIndexedCoordinates:'Sijaintiyhteys: arkiston indeksoidut paikkakoordinaatit. Tarkka kuvauspiste on varmistamatta.',
     source:'Lähde',allSources:'Kaikki',finnaCoordinates:'Sijaintiyhteys: Finnan kuvaustapahtuman koordinaatit.',finnaEventPlace:'Sijaintiyhteys: Finnan kuvaustapahtuman paikkatieto.',finnaSubject:'Sijaintiyhteys: arkiston aihepaikka. Tarkkaa kuvauspaikkaa ei ole varmennettu.',
-    restricted:'Esikatselua ei näytetä, koska käyttöoikeus on rajoitettu tai epäselvä.',finnaFailed:'Finna-haku epäonnistui. Muiden lähteiden tulokset ovat käytettävissä.',finnaScope:'Finna: rajattu 36 tietueen otos. Ajoitukset perustuvat kuvaus- tai valmistustapahtumaan. Puuttuvasta kuvausajasta ei ehdoteta vuosikymmentä.',
+    restricted:'Esikatselua ei näytetä, koska käyttöoikeus on rajoitettu tai epäselvä.',finnaFailed:'Finna-haku epäonnistui. Muiden lähteiden tulokset ovat käytettävissä.',finnaScope:'Finna-aineistoa haetaan rajatuissa erissä. Näytä lisää jatkaa hakua. Ajoitukset perustuvat kuvaus- tai valmistustapahtumaan.',
+    finnaPartial:'Osa Finnan hauista epäonnistui. Näytä lisää yrittää erää uudelleen.',moreFailed:'Seuraavaa aineistoerää ei saatu. Voit yrittää uudelleen.',moreLoading:'Haetaan lisää…',subjects:'Lähteen aiheet',
     alternative:'Sama kuva myös lähteessä',dateEvidence:'Arkiston alkuperäinen ajoitustieto',institution:'Kokoelmaorganisaatio',rightsUnknown:'Käyttöoikeutta ei ilmoitettu',rightsDetails:'Lähteen käyttöoikeusohje',
     brand:'MAAILMAN TUTKIMINEN',nav:'AIMESin palvelut',gallery:'Historialliset kuvat',navEras:'Aikakaudet',stories:'Tarinat',radios:'Radiot',office:'Toimisto',discover:'Muut löydöt',
     home:'Kartta ja paikkahaku',title:'Historialliset aikakaudet',intro:'Hae historiallisia valokuvia maan, paikan tai ajan mukaan. Yksi rajaus riittää.',
@@ -22,7 +24,8 @@ const labels = {
   en: {
     finnaIndexedCoordinates:'Location evidence: indexed archive place coordinates. The precise camera position is unverified.',
     source:'Source',allSources:'All',finnaCoordinates:'Location evidence: Finna capture-event coordinates.',finnaEventPlace:'Location evidence: Finna capture-event place.',finnaSubject:'Location evidence: archive subject place. The precise camera location is unverified.',
-    restricted:'Preview withheld because image rights are restricted or unclear.',finnaFailed:'Finna search failed. Results from the other sources remain available.',finnaScope:'Finna: a limited sample of 36 records. Dating uses capture or creation events. A missing capture date cannot suggest a decade.',
+    restricted:'Preview withheld because image rights are restricted or unclear.',finnaFailed:'Finna search failed. Results from the other sources remain available.',finnaScope:'Finna records are searched in limited batches. Show more continues the search. Dating uses capture or creation events.',
+    finnaPartial:'Some Finna searches failed. Show more retries this batch.',moreFailed:'The next batch could not be loaded. You can try again.',moreLoading:'Loading more…',subjects:'Subjects from the source',
     alternative:'Same photograph also catalogued at',dateEvidence:'Original archive date statement',institution:'Collection institution',rightsUnknown:'Rights not specified',rightsDetails:'Usage instructions from the source',
     brand:'WORLD EXPLORER',nav:'AIMES services',gallery:'Historical photo gallery',navEras:'Historical eras',stories:'Stories',radios:'Radio',office:'Office',discover:'Discover',
     home:'Map and place search',title:'Historical eras',intro:'Find photographs by country, place or time. One search field is enough.',
@@ -88,6 +91,8 @@ async function api(route, parameters, signal) {
 function start() {
   request?.abort();
   request = new AbortController();
+  byId('more').disabled=false;
+  byId('more').textContent=t('more');
   return request.signal;
 }
 function renderWiki() {
@@ -184,6 +189,7 @@ function photoCard(image) {
     text('small',t(image.locationEvidence==='title'?'titleMatch':image.locationEvidence)));
   caption.append(text('small',image.source==='finna'?'Finna':'Wikimedia Commons'));
   if(image.institution)caption.append(text('small',t('institution')+' · '+image.institution));
+  if(image.subjects?.length)caption.append(text('small',t('subjects')+' · '+image.subjects.slice(0,6).join(', ')));
   if(image.dateEvidence && image.dateEvidence!==image.date)caption.append(text('small',t('dateEvidence')+' · '+image.dateEvidence));
   if(image.placeLabel)caption.append(text('small',image.placeLabel));
   if(image.lat!=null && image.lon!=null)caption.append(text('small',image.lat.toFixed(4)+', '+image.lon.toFixed(4)));
@@ -204,16 +210,19 @@ function photoCard(image) {
   figure.append(photoPreview(image),caption);
   return figure;
 }
-function renderPhotos() {
+function filteredPhotos() {
   const chosen = decade.value ? Number(decade.value) : null;
-  const photos = selectedPhotos().filter(({capture,locationEvidence,placeLabel})=>
+  return selectedPhotos().filter(({capture,locationEvidence,placeLabel})=>
     (!locationFilter.value||locationFilter.value===placeLabel) &&
     (locationEvidence!=='title'||byId('include-uncertain').checked) &&
     (precision.value==='all'||precision.value===capture.precision) &&
     (chosen===null||(!capture.uncertain&&capture.start!==null&&capture.start>=chosen&&capture.end<chosen+10)));
-  byId('count').textContent = photos.length ? photos.length+' '+t('count')+(!data.decades.length?' · '+t('noDecades'):'') : t('noPhotos');
+}
+function renderPhotos() {
+  const photos=filteredPhotos();
+  byId('count').textContent = photos.length ? photos.length+' '+t('count')+(decade.options.length===1?' · '+t('noDecades'):'') : t('noPhotos');
   byId('photos').replaceChildren(...photos.slice(0,visibleLimit).map(photoCard));
-  byId('more').hidden=photos.length<=visibleLimit;
+  byId('more').hidden=photos.length<=visibleLimit&&!canFetchMore();
 }
 function selectedPhotos() {
   const source=byId('source').value;
@@ -223,7 +232,15 @@ function selectedPhotos() {
   });
 }
 function renderSourceStatus() {
-  byId('source-status').textContent=t(data.availability.finna===false?'finnaFailed':'finnaScope');
+  byId('source-status').textContent=t(data.availability.finna===false?'finnaFailed':data.pagination?.finna?.partial?'finnaPartial':'finnaScope');
+}
+function canFetchMore() {
+  return byId('source').value!=='commons'&&Boolean(data?.pagination?.finna?.nextPage);
+}
+function searchParameters() {
+  if(region)return {country:region.country,period:region.period};
+  return {lat:place.lat,lon:place.lon,name:place.name,article:place.article||'',alias:place.alias||'',
+    period:place.period||'',country:place.country||'',lang:language};
 }
 function resetFilters() {
   byId('source').value='all';
@@ -341,7 +358,35 @@ for (const filter of [precision,locationFilter,byId('include-uncertain')])filter
   visibleLimit=batchSize;
   renderPhotos();
 });
-byId('more').addEventListener('click',()=>{visibleLimit+=batchSize;renderPhotos();});
+byId('more').addEventListener('click',async()=>{
+  const count=filteredPhotos().length;
+  if(count>visibleLimit) {visibleLimit+=batchSize;renderPhotos();return;}
+  if(!canFetchMore())return;
+  const snapshot=data;
+  const signal=start();
+  byId('more').disabled=true;
+  byId('more').textContent=t('moreLoading');
+  try {
+    const response=await api('era-finna',{...searchParameters(),page:snapshot.pagination.finna.nextPage},signal);
+    if(signal.aborted||data!==snapshot)return;
+    const order=new Map(snapshot.photos.map((photo,index)=>[photo.url,index]));
+    data.photos=combinePhotos(data.photos,response.photos).photos
+      .sort((a,b)=>(order.get(a.url)??Number.MAX_SAFE_INTEGER)-(order.get(b.url)??Number.MAX_SAFE_INTEGER));
+    data.pagination=response.pagination;
+    visibleLimit+=batchSize;
+    renderFilters();
+    renderSourceStatus();
+    setStatus('');
+    renderPhotos();
+  } catch {
+    if(!signal.aborted&&data===snapshot)setStatus('moreFailed');
+  } finally {
+    if(data===snapshot) {
+      byId('more').disabled=false;
+      byId('more').textContent=t('more');
+    }
+  }
+});
 byId('source').addEventListener('change',()=>{visibleLimit=batchSize;renderFilters();renderPhotos();});
 byId('query').value=(new URL(location.href).searchParams.get('q') || '').slice(0,120);
 setLanguage();
