@@ -2,6 +2,13 @@
 
 // Interface copy only. Archive metadata retains its original language.
 window.AimesTranslations = {
+  "Pohjois-Amerikka": "North America",
+  "Etelä-Amerikka": "South America",
+  "Eurooppa": "Europe",
+  "Afrikka": "Africa",
+  "Aasia": "Asia",
+  "Oseania": "Oceania",
+  "Etelämanner": "Antarctica",
   "MAAILMAN TUTKIMINEN": "WORLD EXPLORER",
   "AIMESin palvelut": "AIMES services",
   "Kartta ja paikkahaku": "Map and place search",

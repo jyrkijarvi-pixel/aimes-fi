@@ -37,8 +37,8 @@ for (let lon = -180; lon <= 180; lon += 30) {
   L.polyline([[-90,lon],[90,lon]], { color:'#6c9896', opacity:.35, weight:1, interactive:false }).addTo(map);
 }
 const continentLabels = L.layerGroup([
-  ['Pohjois-Amerikka', 48, -108], ['Etelä-Amerikka', -16, -59], ['Eurooppa', 53, 19],
-  ['Afrikka', 7, 19], ['Aasia', 50, 92], ['Oseania', -25, 139], ['Etelämanner', -78, 0]
+  [tr('Pohjois-Amerikka'), 48, -108], [tr('Etelä-Amerikka'), -16, -59], [tr('Eurooppa'), 53, 19],
+  [tr('Afrikka'), 7, 19], [tr('Aasia'), 50, 92], [tr('Oseania'), -25, 139], [tr('Etelämanner'), -78, 0]
 ].map(([name, lat, lon]) => L.marker([lat, lon], {
   icon: L.divIcon({ className:'continent', html:`<span>${name}</span>`, iconSize:[0,0] }),
   interactive:false, keyboard:false
@@ -791,7 +791,7 @@ for(const anchor of document.querySelectorAll('[data-language]'))anchor.addEvent
   const target=new URL(anchor.href);
   if(current) {
     for(const [key,value] of Object.entries({lat:current.lat,lon:current.lon,name:current.name || '',
-      article:current.article || '',year:currentYear ?? ''}))target.searchParams.set(key,value);
+      article:current.article || '',year:currentYear ?? '',kind:current.kind || 'place'}))target.searchParams.set(key,value);
   } else target.searchParams.set('q',byId('query').value);
   anchor.href=target.href;
 });
@@ -801,7 +801,8 @@ if(restore.has('lat')&&restore.has('lon')) {
   const year=restore.get('year')?Number(restore.get('year')):null;
   if(Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180&&
     (year===null||Number.isInteger(year)&&year!==0&&Math.abs(year)<=100000)) {
-    travel({lat,lon,name:restore.get('name') || tr('Karttapiste'),article:restore.get('article') || '',label:''},year);
+    const kind=['point','country'].includes(restore.get('kind'))?restore.get('kind'):'place';
+    travel({lat,lon,kind,name:kind==='point'?tr('Karttapiste'):restore.get('name') || tr('Karttapiste'),article:restore.get('article') || '',label:''},year);
   }
 } else if(restore.has('q'))byId('query').value=restore.get('q').slice(0,140);
 byId('explore-close').addEventListener('click', closeExplorer);
