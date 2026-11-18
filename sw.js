@@ -2,6 +2,11 @@ self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => self.clients.claim());
 const CACHE='aimes-v11-2';
 self.addEventListener('fetch', e => {
+  if(e.request.method!=='GET')return;
+  if(e.request.mode==='navigate') {
+    e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+    return;
+  }
   if (e.request.url.includes('web-llm') || e.request.url.includes('mlc') || e.request.url.includes('huggingface')) return;
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request).then(res => {

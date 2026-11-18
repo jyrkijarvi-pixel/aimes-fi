@@ -1,5 +1,8 @@
 'use strict';
 
+const tr=window.AimesLanguage.t;
+window.AimesLanguage.apply();
+
 const byId=id=>document.getElementById(id);
 const viewport=byId('viewport');
 const photo=byId('photograph');
@@ -15,9 +18,9 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const markers=[...document.querySelectorAll('.marker')];
 
 const spots={
-  city:{x:.28,y:.27,title:'Kaupungintalo',description:'Vaalea julkisivu näkyy torin takana. Vuoden 1952 kuvassa Börje Dilén tallensi saman rakennuksen toisesta suunnasta.',source:'https://www.finna.fi/Record/hkm.429E061A-83E3-4F8C-AFE2-AACC8CA07B86'},
-  market:{x:.53,y:.40,title:'Torikojut',description:'Kojurivi erottaa torin ja rantareunan. Torikauppa ja kalastajien myyntiveneet kuuluivat Kauppatorin arkeen.',source:'https://historia.hel.fi/fi/alueet/etelainen/esplanadit-ja-kauppatori-kaupungin-sykkiva-sydan'},
-  boats:{x:.47,y:.60,title:'Kolera-altaan veneet',description:'Kajantien kuvassa näkyvät rinnakkain sidotut puuveneet, niiden penkit ja rantaan asettuneet ihmiset.',source:'https://hkm.finna.fi/Record/hkm.87455276-66CB-47DF-98AF-DF2A3EA7C062'}
+  city:{x:.28,y:.27,title:tr('Kaupungintalo'),description:tr('Vaalea julkisivu näkyy torin takana. Vuoden 1952 kuvassa Börje Dilén tallensi saman rakennuksen toisesta suunnasta.'),source:'https://www.finna.fi/Record/hkm.429E061A-83E3-4F8C-AFE2-AACC8CA07B86'},
+  market:{x:.53,y:.40,title:tr('Torikojut'),description:tr('Kojurivi erottaa torin ja rantareunan. Torikauppa ja kalastajien myyntiveneet kuuluivat Kauppatorin arkeen.'),source:'https://historia.hel.fi/fi/alueet/etelainen/esplanadit-ja-kauppatori-kaupungin-sykkiva-sydan'},
+  boats:{x:.47,y:.60,title:tr('Kolera-altaan veneet'),description:tr('Kajantien kuvassa näkyvät rinnakkain sidotut puuveneet, niiden penkit ja rantaan asettuneet ihmiset.'),source:'https://hkm.finna.fi/Record/hkm.87455276-66CB-47DF-98AF-DF2A3EA7C062'}
 };
 const zoomLevels=[1.05,1.36,1.83,2.42];
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
@@ -105,7 +108,7 @@ function finish(event) {
 }
 function setComparison(open,returnFocus=true) {
   compare.setAttribute('aria-pressed',String(open));
-  compare.textContent=open?'Sulje vertailu':'Vertaa arkistokuvaan';
+  compare.textContent=open?tr('Sulje vertailu'):tr('Vertaa arkistokuvaan');
   viewport.classList.toggle('comparing',open);
   byId('original').hidden=!open;
   byId('compare-labels').hidden=!open;
@@ -132,7 +135,7 @@ function enable() {
 }
 function unavailable() {
   const notice=byId('notice');
-  notice.textContent='Arkistokuvaa ei saatu ladattua. Lähdelinkit löytyvät alempaa.';
+  notice.textContent=tr('Arkistokuvaa ei saatu ladattua. Lähdelinkit löytyvät alempaa.');
   notice.hidden=false;
 }
 if(hero.complete) {

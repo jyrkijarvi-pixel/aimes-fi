@@ -373,11 +373,11 @@ async function pictures(point, eras = false, period = null) {
     .slice(0, 24);
 }
 
-async function place(point) {
+async function place(point, language='fi') {
   const demo = point.year === 1952 && distance(point, helsinki) <= 16000;
   const key = JSON.stringify(point);
   const [wikiResult, commonsResult] = await Promise.allSettled([
-    cached(`wiki:${JSON.stringify({ ...point, year: null })}`, () => articles(point)),
+    cached(`wiki:${language}:${JSON.stringify({ ...point, year: null })}`, () => articles(point,language)),
     cached(`media:${key}`, () => pictures(point))
   ]);
   const photos = commonsResult.value || [];
@@ -674,7 +674,7 @@ export async function onRequest(ctx) {
     if(route==='place') {
       const p=parsePoint(url.searchParams);
       if(!p)return respond({error:'Tarkista koordinaatit ja vuosi.'},400);
-      return respond(await place(p));
+      return respond(await place(p,url.searchParams.get('lang')==='en'?'en':'fi'));
     }
     return respond({error:'Ei löydy.'},404);
   }catch(err){return respond({error:'Tietojen lataus epäonnistui.'},503)}
