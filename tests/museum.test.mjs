@@ -2,8 +2,10 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {normalize,safeUrl} from '../museum/smithsonian.js';
 import {parseSearch,onRequest} from '../functions/museum/api/search.js';
+import {guardDatabase} from './museum-db.mjs';
 const base='https://preview.example/museum/api/search';
-const ctx=(query,env={})=>({request:new Request(base+query),env,waitUntil:()=>{}});
+let requestId = 0;
+const ctx=(query,env={})=>({request:new Request(base+query,{headers:{'CF-Connecting-IP':'test-'+(++requestId)}}),env,waitUntil:()=>{}});
 test('guided entry, bounded pagination and literal queries',async()=>{
  assert.equal(parseSearch(new URL(base)).guided,true);
  assert.equal(parseSearch(new URL(base+'?topic=unknown')),null);
@@ -28,7 +30,7 @@ test('upstream requests are cached, deduplicated, timed out and isolated',async(
  const original=globalThis.fetch;let calls=0;
  try{
  globalThis.fetch=async(url,options)=>{calls++;assert.equal(new URL(url).searchParams.get('rows'),'12');assert.equal(options.headers['X-Api-Key'],'test-only-key');assert(!url.toString().includes('test-only-key'));return Response.json({status:200,response:{rowCount:30,rows:[{id:'one',title:'Object',content:{}}]}})};
- const env={SMITHSONIAN_API_KEY:'test-only-key'};
+ const env={SMITHSONIAN_API_KEY:'test-only-key',MUSEUM_GUARD:guardDatabase()};
  const [a,b]=await Promise.all([onRequest(ctx('?q=cache-case',env)),onRequest(ctx('?q=cache-case',env))]);assert.equal(a.status,200);assert.equal(b.status,200);assert.equal(calls,1);assert.equal((await a.json()).next,12);assert.equal((await b.json()).upstreamRequests,0);
  const cached=await(await onRequest(ctx('?q=cache-case',env))).json();assert.equal(cached.cached,true);assert.equal(calls,1);
  globalThis.fetch=async()=>{throw new DOMException('Timeout','TimeoutError')};assert.equal((await onRequest(ctx('?q=timeout-case',env))).status,503);

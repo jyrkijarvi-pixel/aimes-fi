@@ -1,10 +1,17 @@
 import { normalize, topics } from '../../../museum/smithsonian.js';
+import { control, reserve, cooldown } from '../guard.js';
 
 const memory = new Map(), inFlight = new Map(), visitors = new Map();
 const TTL = 900000, SIZE = 12, MAX_START = 240;
-let cooldownUntil = 0;
 const headers = { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' };
 const reply = (data, status = 200, extra = {}) => new Response(JSON.stringify(data), { status, headers: { ...headers, 'Cache-Control': 'no-store', ...extra } });
+function failure(error) {
+  if (error.message === 'limit') {
+    const seconds = error.retryAfter || 60;
+    return reply({ error: 'limit', retryAfter: seconds }, 429, { 'Retry-After': String(seconds) });
+  }
+  return reply({ error: error.message === 'configuration' ? 'configuration' : 'unavailable' }, 503);
+}
 export function parseSearch(url) {
   const q = (url.searchParams.get('q') || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
   const topic = url.searchParams.get('topic') || '';
@@ -26,6 +33,16 @@ export async function onRequest(ctx) {
   if (!parsed) return reply({ error: 'invalid' }, 400);
   if (parsed.guided) return reply({ rows: [], total: 0, guided: true, upstreamRequests: 0 });
   if (!ctx.env.SMITHSONIAN_API_KEY) return reply({ error: 'configuration' }, 503);
+  // Apply the lightweight IP guard even to cache hits. This is supplementary,
+  // while D1 below enforces the shared upstream budget across isolates/locations.
+  const ip = ctx.request.headers.get('CF-Connecting-IP') || 'local';
+  const visitor = visitors.get(ip);
+  if (visitor && visitor.until > Date.now() && visitor.count >= 5) return reply({ error: 'limit', retryAfter: 60 }, 429, { 'Retry-After': '60' });
+  visitors.set(ip, { count: visitor && visitor.until > Date.now() ? visitor.count + 1 : 1, until: visitor && visitor.until > Date.now() ? visitor.until : Date.now() + 60000 });
+  if (visitors.size > 256) visitors.delete(visitors.keys().next().value);
+  let state;
+  try { state = await control(ctx.env.MUSEUM_GUARD); }
+  catch { return reply({ error: 'configuration' }, 503); }
   const identity = JSON.stringify([parsed.q.toLowerCase(), parsed.topic, parsed.start]);
   const cacheRequest = new Request(new URL('/museum/api/cache?v=1&key=' + encodeURIComponent(identity), ctx.request.url));
   const edge = globalThis.caches?.default;
@@ -35,18 +52,14 @@ export async function onRequest(ctx) {
     const hit = await edge?.match(cacheRequest);
     if (hit) return reply({ ...await hit.json(), cached: true, upstreamRequests: 0 });
   } catch { /* A cache outage must not disable the module. */ }
-  const retry = Math.ceil((cooldownUntil - Date.now()) / 1000);
+  const retry = Math.max(0, Math.ceil((state.retry_until - Date.now()) / 1000));
   if (retry > 0) return reply({ error: 'limit', retryAfter: retry }, 429, { 'Retry-After': String(retry) });
   if (inFlight.has(identity)) {
     try { return reply({ ...await inFlight.get(identity), cached: true, upstreamRequests: 0 }); }
-    catch { return reply({ error: 'unavailable' }, 503); }
+    catch (error) { return failure(error); }
   }
-  const ip = ctx.request.headers.get('CF-Connecting-IP') || 'local';
-  const visitor = visitors.get(ip);
-  if (visitor && visitor.until > Date.now() && visitor.count >= 20) return reply({ error: 'limit', retryAfter: 60 }, 429, { 'Retry-After': '60' });
-  visitors.set(ip, { count: visitor && visitor.until > Date.now() ? visitor.count + 1 : 1, until: visitor && visitor.until > Date.now() ? visitor.until : Date.now() + 60000 });
-  if (visitors.size > 256) visitors.delete(visitors.keys().next().value);
   const load = async () => {
+    await reserve(ctx.env.MUSEUM_GUARD);
     const url = new URL('https://api.si.edu/openaccess/api/v1.0/search');
     for (const [key, value] of Object.entries({ q: parsed.query, type: 'edanmdm', rows: String(SIZE), start: String(parsed.start), fqs: JSON.stringify(parsed.filters) })) url.searchParams.set(key, value);
     const started = Date.now();
@@ -54,8 +67,9 @@ export async function onRequest(ctx) {
     if (response.status === 429) {
       const header = response.headers.get('Retry-After');
       const seconds = /^\d+$/.test(header || '') ? Number(header) : Math.ceil((Date.parse(header) - Date.now()) / 1000);
-      cooldownUntil = Date.now() + Math.max(60, Number.isFinite(seconds) ? seconds : 60) * 1000;
-      throw new Error('limit');
+      const retryAfter = Math.max(60, Number.isFinite(seconds) ? seconds : 60);
+      await cooldown(ctx.env.MUSEUM_GUARD, retryAfter);
+      throw Object.assign(new Error('limit'), { retryAfter });
     }
     if (!response.ok) throw new Error('unavailable');
     const payload = await response.json();
@@ -75,11 +89,6 @@ export async function onRequest(ctx) {
   };
   const promise = load(); inFlight.set(identity, promise);
   try { return reply(await promise); }
-  catch (e) {
-    if (e.message === 'limit') {
-      const seconds = Math.ceil((cooldownUntil - Date.now()) / 1000);
-      return reply({ error: 'limit', retryAfter: seconds }, 429, { 'Retry-After': String(seconds) });
-    }
-    return reply({ error: 'unavailable' }, 503);
-  } finally { inFlight.delete(identity); }
+  catch (error) { return failure(error); }
+  finally { inFlight.delete(identity); }
 }
