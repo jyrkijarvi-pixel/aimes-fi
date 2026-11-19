@@ -2,7 +2,8 @@
   "version": 1,
   "include": [
     "/api/*",
-    "/time-jump/api/*"
+    "/time-jump/api/*",
+    "/museum/api/*"
   ],
   "exclude": []
 }

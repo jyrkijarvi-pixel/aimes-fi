@@ -60,4 +60,16 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/time-jump/helsinki-1952-photo/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/time-jump/helsinki-1952-photo/" />
   </url>
+  <url>
+    <loc>https://aimes.fi/museum/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/museum/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/museum/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/museum/" />
+  </url>
+  <url>
+    <loc>https://aimes.fi/en/museum/</loc>
+    <xhtml:link rel="alternate" hreflang="fi" href="https://aimes.fi/museum/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aimes.fi/en/museum/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aimes.fi/museum/" />
+  </url>
 </urlset>

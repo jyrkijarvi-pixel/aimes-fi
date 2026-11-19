@@ -26,3 +26,7 @@
 /en/time-jump/*
   ! Referrer-Policy
   Referrer-Policy: strict-origin-when-cross-origin
+/museum/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://ids.si.edu https://3d-api.si.edu; frame-src https://3d-api.si.edu; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'
+/en/museum/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://ids.si.edu https://3d-api.si.edu; frame-src https://3d-api.si.edu; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'

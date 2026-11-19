@@ -24,6 +24,7 @@
     return copy.replace(/\{(\d+)\}/g,(_match,index)=>String(values[index] ?? ''));
   };
   function localizedPath(path,next) {
+    if(['/museum/','/en/museum/'].includes(path))return next==='en'?'/en/museum/':'/museum/';
     if(['/','/en/','/time-jump/'].includes(path))return next==='en'?'/en/':'/';
     if(['/toimisto/','/en/toimisto/'].includes(path))return next==='en'?'/en/toimisto/':'/toimisto/';
     if(['/aimes-vanha','/aimes-vanha.html','/en/aimes-vanha','/en/aimes-vanha.html'].includes(path))return next==='en'?'/en/aimes-vanha':'/aimes-vanha';
@@ -94,7 +95,7 @@
   }
   window.AimesLanguage={language,t:translate,remember,apply,localizedUrl,decorateLinks,seo};
   const destination=localizedPath(url.pathname,language);
-  if(destination!==url.pathname && (englishPath||url.pathname==='/'||url.pathname==='/toimisto/'||url.pathname==='/aimes-vanha'||shared(url.pathname))) {
+  if(destination!==url.pathname && (englishPath||url.pathname==='/'||url.pathname==='/museum/'||url.pathname==='/toimisto/'||url.pathname==='/aimes-vanha'||shared(url.pathname))) {
     url.pathname=destination;
     location.replace(url.href);
     return;

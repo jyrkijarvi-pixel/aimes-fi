@@ -1,0 +1,38 @@
+export const fi = {
+ title:'Maailman museo', subtitle:'Esineitä, tarinoita ja löytöjä Smithsonianin kokoelmista.',
+ intro:'Tutki tieteen, taiteen ja historian aitoja aineistoja. Kuvat ja 3D-mallit avautuvat silloin, kun niiden käyttöoikeudet sallivat sen.',
+ query:'Mitä haluaisit löytää?', placeholder:'Apollo 11, Titanic, dinosaur…', topic:'Aihepiiri', all:'Kaikki aihepiirit', search:'Hae museosta',
+ guide:'Valitse aihepiiri tai kirjoita hakusana. Haku käynnistyy vasta pyynnöstäsi.',
+ languageNote:'Kokoelmien kuvaukset ovat alkuperäisellä kielellä, yleensä englanniksi. Myös englanninkielistä hakusanaa kannattaa kokeilla.',
+ space:'Avaruusmatkailu', aviation:'Ilmailu', science:'Tiede ja keksinnöt', history:'Historia ja kulttuuri', art:'Taide', nature:'Luonnonhistoria', maps:'Historialliset kartat', models:'3D-museoesineet',
+ loading:'Haetaan Smithsonianin kokoelmista…', more:'Näytä lisää', empty:'Näillä hakuehdoilla ei löytynyt aineistoa. Kokeile toista hakusanaa tai aihepiiriä.',
+ found:'Kokoelmaosumia: {0}. Näytetään {1} tietuetta.', partial:'Tämä on rajattu aineistoerä, ei koko kokoelman sisältö.', limitPages:'Tämän haun eräraja saavutettiin. Tarkenna hakusanaa nähdäksesi muita aineistoja.',
+ source:'Avaa alkuperäinen lähde', noPreview:'Esikatseluun oikeuttavaa kuvamediaa ei palautettu. Alkuperäinen tietue on saatavilla lähteessä.',
+ imageFailed:'Kuva ei latautunut. Voit tarkistaa sen alkuperäisestä lähteestä.', enlarge:'Suurenna kuva', details:'Tutki esinettä', close:'Sulje',
+ image:'Kuva', images:'Kuvat', next:'Seuraava kuva', previous:'Edellinen kuva', dates:'Ajoitustiedot', places:'Paikkatiedot', people:'Tekijät ja muut roolit', description:'Kuvaus', rights:'Käyttöoikeudet', credits:'Kokoelma ja lähde', types:'Aineistotyyppi', missing:'Ei ilmoitettu',
+ dateNote:'Ajoitus voi tarkoittaa esineen valmistusta, kuvausta, vedostusta tai muuta tapahtumaa. Alkuperäiset kenttänimet on säilytetty.',
+ cc0:'CC0 · kuvan käyttö sallittu', mediaNote:'Vain CC0-merkitty media näytetään. Metadatan oikeus ei yksin anna kuvalle käyttöoikeutta.',
+ model:'Interaktiivinen 3D', loadModel:'Lataa 3D-katselin', externalModel:'Avaa 3D Smithsonianissa', modelNote:'Katselin on Smithsonianin palvelu. Se latautuu vasta painikkeesta ja voi siirtää paljon aineistoa. Käytä hiirtä tai kosketusta mallin kiertämiseen ja zoomaukseen. Katselimen omat tekstit voivat olla englanniksi.', modelFallback:'Jos katselin jää tyhjäksi tai laitteesi ei tue sitä, avaa Smithsonianin oma katselin.',
+ configuration:'Museohaku on pois käytöstä. Muut AIMES-palvelut ovat käytettävissä.', unavailable:'Smithsonian ei vastaa juuri nyt. Yritä myöhemmin uudelleen. Muut AIMES-palvelut ovat käytettävissä.', limit:'Museon hakuraja täyttyi. Yritä uudelleen {0} sekunnin kuluttua.', invalid:'Kirjoita 2–100 merkkiä tai valitse aihepiiri.', retry:'Yritä uudelleen',
+ home:'Kartta ja paikkahaku', eras:'Aikakaudet', stories:'Tarinat', radios:'Radiot', office:'Toimisto', skip:'Siirry sisältöön', services:'AIMESin palvelut', language:'Kieli',
+ footer:'Lähde: Smithsonian Open Access. Aineistojen nimet ja kuvaukset säilyvät alkuperäisinä. Tämä museo ei muuta AIMESin nykyisiä paikkahakuja tai aikamatkoja.'
+};
+export const en = {
+ title:'World Museum', subtitle:'Objects, stories and discoveries from the Smithsonian collections.',
+ intro:'Explore authentic science, art and history collections. Images and 3D models are available where their usage rights allow it.',
+ query:'What would you like to discover?', placeholder:'Apollo 11, Titanic, dinosaur…', topic:'Subject', all:'All subjects', search:'Search the museum',
+ guide:'Choose a subject or enter a search term. Searches run only when you request them.',
+ languageNote:'Collection descriptions remain in their original language, usually English. Try an English search term as well.',
+ space:'Space exploration', aviation:'Aviation', science:'Science and inventions', history:'History and culture', art:'Art', nature:'Natural history', maps:'Historical maps', models:'3D museum objects',
+ loading:'Searching the Smithsonian collections…', more:'Show more', empty:'No collection records matched this search. Try another term or subject.',
+ found:'Collection matches: {0}. Showing {1} records.', partial:'This is a limited batch, not the entire collection.', limitPages:'This search reached its batch limit. Refine your search to explore other records.',
+ source:'Open the original source', noPreview:'No image media permitting a preview was returned. The original record is available at the source.',
+ imageFailed:'The image could not be loaded. You can check the original source.', enlarge:'Enlarge image', details:'Explore this object', close:'Close',
+ image:'Image', images:'Images', next:'Next image', previous:'Previous image', dates:'Dating information', places:'Place information', people:'Creators and other roles', description:'Description', rights:'Usage rights', credits:'Collection and source', types:'Object type', missing:'Not provided',
+ dateNote:'Dates may refer to manufacture, photography, printing or another event. Original field labels are preserved.',
+ cc0:'CC0 · image reuse permitted', mediaNote:'Only CC0-designated media is displayed. Metadata rights alone do not grant permission to display an image.',
+ model:'Interactive 3D', loadModel:'Load 3D viewer', externalModel:'Open 3D at the Smithsonian', modelNote:'This viewer is provided by the Smithsonian. It loads only when requested and may transfer large amounts of data. Use your mouse or touch to rotate and zoom. Viewer controls may be in English.', modelFallback:'If the viewer remains blank or is unsupported by your device, open the Smithsonian viewer directly.',
+ configuration:'Museum search is disabled. Other AIMES services remain available.', unavailable:'The Smithsonian is not responding right now. Please try again later. Other AIMES services remain available.', limit:'The museum search limit was reached. Please try again in {0} seconds.', invalid:'Enter 2–100 characters or choose a subject.', retry:'Try again',
+ home:'Map and place search', eras:'Historical eras', stories:'Stories', radios:'Radio', office:'Office', skip:'Skip to content', services:'AIMES services', language:'Language',
+ footer:'Source: Smithsonian Open Access. Collection titles and descriptions remain in their original language. This museum does not change existing AIMES place searches or time journeys.'
+};
