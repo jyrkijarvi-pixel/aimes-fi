@@ -1,5 +1,7 @@
 # World Museum — test report, 19 November 2026
 
+Quota protection was subsequently strengthened and tested: see [PREFLIGHT.md](PREFLIGHT.md) for the latest preview, shared limits, emergency-stop results and release restrictions. The following records the original UI/collection test.
+
 Application commit: `003b0df`, based on current main `98afe40`. Later documentation commits do not change the tested application.
 
 Draft PR: https://github.com/jyrkijarvi-pixel/aimes-fi/pull/21
