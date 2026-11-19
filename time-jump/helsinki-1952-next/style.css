@@ -1,0 +1,74 @@
+:root { color-scheme:dark; font:16px/1.55 "Segoe UI",system-ui,sans-serif; color:#fbf1dd; background:#102023; }
+* { box-sizing:border-box; }
+body { margin:0; }
+a { color:#cae6da; text-underline-offset:.2em; }
+button,select { font:inherit; }
+button { cursor:pointer; }
+[hidden] { display:none !important; }
+:focus-visible { outline:3px solid #f5cc7a; outline-offset:3px; }
+header { min-height:64px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 20px; padding:12px clamp(16px,4vw,64px); }
+header a:first-child { text-decoration:none; color:#fff2d6; font-weight:800; letter-spacing:.12em; }
+header span,.eyebrow { color:#e7cc94; font-size:.74rem; letter-spacing:.16em; font-weight:700; }
+header span { margin-left:.6em; }
+.stage { position:relative; isolation:isolate; height:clamp(440px,76svh,900px); background:#82aab5; }
+#view { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+#view:active { cursor:grabbing; }
+#view:focus-visible { outline-offset:-4px; }
+.arrival { position:absolute; inset:0; display:grid; align-items:end; padding:clamp(22px,6vw,100px); background:linear-gradient(90deg,#091617ed 0%,#0916179e 35%,transparent 83%),linear-gradient(0deg,#0b171acc,transparent 50%),url("kolera-allas.webp") center 55%/cover; }
+.arrival > div { max-width:37rem; }
+h1,h2 { font-family:Georgia,serif; font-weight:400; }
+h1 { font-size:clamp(3.3rem,10vw,9rem); margin:.08em 0; line-height:.93; letter-spacing:-.055em; }
+.arrival > div > p:not(.eyebrow) { max-width:35ch; }
+#enter { padding:.73em 1.05em; border:0; border-radius:4px; background:#eed09a; color:#19292b; font-weight:750; }
+#enter span { margin-left:1em; }
+#enter:disabled { opacity:.64; }
+#status:empty { display:none; }
+#status,.image-credit { font-size:.8rem; color:#f5e5cd; }
+.image-credit { position:absolute; bottom:4px; right:12px; left:12px; text-align:right; line-height:1.25; }
+.overlay { position:absolute; inset:0; pointer-events:none; }
+.hud,.view-controls,.touch { position:absolute; }
+.hud { top:12px; left:12px; background:#102023e8; padding:8px 12px; border-radius:5px; }
+.hud p { margin:0; }
+.hud strong { font-size:.85rem; }
+.view-controls { right:12px; top:12px; display:flex; flex-wrap:wrap; gap:6px; }
+.view-controls button,.view-controls label,.touch button { pointer-events:auto; color:#fff3dc; background:#102023ed; border:1px solid #8b9d97; border-radius:5px; padding:8px 10px; }
+.view-controls select { background:#102023; color:#fff3dc; border:0; }
+.touch { display:none; bottom:12px; left:12px; grid-template-columns:repeat(3,52px); gap:4px; touch-action:none; }
+.touch button { height:48px; font-size:1.2rem; }
+.touch button:first-child { grid-column:2; }
+.touch button:nth-child(2) { grid-column:1; }
+.controls { font-size:.85rem; padding:12px clamp(16px,4vw,64px); margin:0; border-bottom:1px solid #506765; color:#d1e0d7; }
+.sources { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:clamp(20px,5vw,72px); padding:clamp(18px,5vw,72px); max-width:1450px; margin:auto; }
+.sources h2 { font-size:clamp(2.1rem,5vw,4rem); line-height:1.1; margin:.2em 0; }
+.sources figure { margin:0; }
+.sources img { display:block; width:100%; height:auto; }
+.sources figcaption { color:#d5e4d9; font-size:.82rem; padding-top:.6rem; }
+@media (pointer:coarse) { .touch { display:grid; } }
+@media (max-width:720px) {
+  .stage { height:clamp(440px,72svh,670px); }
+  .touch { display:grid; }
+  .arrival { background:linear-gradient(0deg,#091617fa 7%,#091617a8 43%,transparent 96%),url("kolera-allas.webp") 48% center/cover; }
+  .arrival > div { padding-bottom:32px; }
+  .sources { grid-template-columns:1fr; }
+  .view-controls { right:8px; top:auto; bottom:12px; flex-direction:column; align-items:flex-end; }
+}
+
+.stage.is-comparing { width:min(100%,calc((100svh - 180px) * 1200 / 793)); height:auto; aspect-ratio:1200/793; margin-inline:auto; }
+.is-comparing #view,.archive-layer { position:absolute; inset:0; }
+.is-comparing .overlay { display:none; }
+.archive-layer { pointer-events:none; --archive-share:50%; }
+.archive-layer img { display:block; width:100%; height:100%; clip-path:inset(0 calc(100% - var(--archive-share)) 0 0); }
+.archive-layer::after { content:""; position:absolute; top:0; bottom:0; left:var(--archive-share); width:2px; background:#f8d69b; }
+.archive-label,.model-label { position:absolute; top:8px; padding:4px 7px; color:#fff3dc; background:#102023ee; border-radius:3px; font-size:clamp(.67rem,1.5vw,.9rem); }
+.archive-label { left:8px; }
+.model-label { right:8px; }
+.comparison-tools { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 14px; padding:12px 16px; }
+.comparison-tools input { width:clamp(100px,35vw,320px); accent-color:#eed09a; min-height:32px; }
+.comparison-tools button { border:1px solid #8b9d97; background:#183332; color:#fff3dc; border-radius:5px; padding:6px 10px; }
+.comparison-tools p { flex-basis:100%; margin:0; text-align:center; color:#d1e0d7; font-size:.82rem; }
+.sources details+details { margin-top:8px; }
+.sources details figure { margin-top:12px; }
+@media (max-width:720px) {
+  .stage.is-comparing { width:100%; }
+  .view-controls { max-width:54%; }
+}
