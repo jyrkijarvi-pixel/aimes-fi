@@ -2,6 +2,7 @@
 
 // Interface copy only. Archive metadata retains its original language.
 window.AimesTranslations = {
+  "Maailman museo": "World Museum",
   "Pohjois-Amerikka": "North America",
   "Etelä-Amerikka": "South America",
   "Eurooppa": "Europe",
