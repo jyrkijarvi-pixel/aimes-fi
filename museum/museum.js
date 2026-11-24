@@ -4,6 +4,7 @@ const t=(key,...args)=>copy[key].replace(/\{(\d+)\}/g,(_,n)=>String(args[n]??'')
 const $=s=>document.querySelector(s), node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el};
 const form=$('#museum-search'),query=$('#museum-query'),topic=$('#museum-topic'),status=$('#museum-status'),grid=$('#museum-results'),more=$('#museum-more'),dialog=$('#museum-dialog');
 let rows=[],active=null,controller,next=null,busy=false;
+let requestedObject=new URL(location.href).searchParams.get('object');
 function link(url,label){const a=node('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.referrerPolicy='no-referrer';return a}
 function button(label,fn,cls='outline'){const b=node('button',label,cls);b.type='button';b.addEventListener('click',fn);return b}
 function picture(image,alt,onDone){
@@ -43,7 +44,7 @@ async function search(append=false){
  controller?.abort();const request=new AbortController();controller=request;busy=true;form.querySelector('button').disabled=true;more.disabled=true;status.textContent=t('loading');
  const url=new URL('/museum/api/search',location.origin);url.searchParams.set('q',active.q);url.searchParams.set('topic',active.topic);if(append)url.searchParams.set('start',next);
  try{const response=await fetch(url,{signal:request.signal,headers:{Accept:'application/json'}});const data=await response.json();if(!response.ok)throw Object.assign(new Error(data.error||'unavailable'),{retry:data.retryAfter});
-  rows=append?[...new Map([...rows,...data.rows].map(r=>[r.id,r])).values()]:data.rows;next=data.next;renderCards();status.textContent=rows.length?t('found',data.total.toLocaleString(english?'en':'fi'),rows.length)+' '+(data.bounded?t('limitPages'):t('partial')):t('empty');more.hidden=next===null||next===undefined;window.dispatchEvent(new CustomEvent('museum-search-complete',{detail:{count:rows.length,cached:data.cached}}));
+  rows=append?[...new Map([...rows,...data.rows].map(r=>[r.id,r])).values()]:data.rows;next=data.next;renderCards();if(requestedObject){const chosen=rows.find(row=>row.id===requestedObject);requestedObject=null;if(chosen)openObject(chosen);}status.textContent=rows.length?t('found',data.total.toLocaleString(english?'en':'fi'),rows.length)+' '+(data.bounded?t('limitPages'):t('partial')):t('empty');more.hidden=next===null||next===undefined;window.dispatchEvent(new CustomEvent('museum-search-complete',{detail:{count:rows.length,cached:data.cached}}));
  }catch(e){if(e.name==='AbortError')return;status.textContent=e.message==='limit'?t('limit',e.retry||60):t(['configuration','invalid','unavailable'].includes(e.message)?e.message:'unavailable');if(!append){rows=[];renderCards();more.hidden=true}}
  finally{if(controller===request){busy=false;form.querySelector('button').disabled=false;more.disabled=false}}
 }
