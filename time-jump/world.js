@@ -635,7 +635,8 @@ function renderExplorerNearby() {
 }
 function buildExplorerMap() {
   if (explorerMap) { explorerMap.invalidateSize({ pan:false }); return; }
-  explorerMap = L.map('explore-map', { crs:L.CRS.EPSG4326, zoomControl:false, zoomAnimation:false, minZoom:-2, maxZoom:17, maxBounds:worldBounds });
+  // Share Web Mercator between the local vector overview and OSM street tiles.
+  explorerMap = L.map('explore-map', { zoomControl:false, zoomAnimation:false, minZoom:-2, maxZoom:17, maxBounds:worldBounds });
   explorerMap.setView([current.lat, current.lon], 5, { animate:false });
   explorerMap.attributionControl.setPrefix(false).addAttribution('<a href="https://www.naturalearthdata.com/about/terms-of-use/">Natural Earth · '+tr('nykykartta')+'</a>');
   explorerPhotoMarkers = L.layerGroup().addTo(explorerMap);
