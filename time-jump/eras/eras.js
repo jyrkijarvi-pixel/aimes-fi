@@ -264,6 +264,7 @@ function showResults() {
 }
 async function loadPlace(selected, keepFilters = false) {
   place = selected;
+  window.AimesJourney?.remember({...selected, period:selected.period || ''});
   region = null;
   const signal = start();
   setStatus('loading');
@@ -400,4 +401,10 @@ fetch('countries.json').then(res=>{
 }).then(value=>{
   countries=value;
   renderCountries();
+  const restore=()=>{
+    const selected=window.AimesJourney?.state;if(!selected)return;
+    byId('query').value=selected.name;periodInput.value=selected.period;country.value=selected.country;
+    loadPlace({...selected,alias:selected.name,label:selected.name});
+  };
+  if(window.AimesJourney)restore();else window.addEventListener('aimes-shell-ready',restore,{once:true});
 }).catch(()=>setStatus('failed'));

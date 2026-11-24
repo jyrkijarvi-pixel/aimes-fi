@@ -305,6 +305,11 @@ async function travel(point, year = null, move = true) {
   byId('back').hidden = false;
   byId('place-title').textContent = point.name || tr('Karttapiste');
   byId('place-eras').href = '/time-jump/eras/' + (point.kind === 'point' || !point.name ? '' : '?q='+encodeURIComponent(point.name));
+  window.AimesJourney?.remember({...point, period:year === null ? '' : String(year)});
+  const trailUrl=new URL(window.AimesLanguage.localizedUrl('/time-jump/eras/'));
+  for(const [key,value] of new URL(location.href).searchParams)if(key.startsWith('j'))trailUrl.searchParams.set(key,value);
+  if(point.name)trailUrl.searchParams.set('q',point.name);
+  byId('place-eras').href=trailUrl;
   byId('place-label').textContent = point.label === point.name ? '' : point.label || '';
   byId('coordinates').textContent = `${pointLabel(point.lat, point.lon)} · ${year === null ? tr('NYKYHETKI') : yearLabel(year)}`;
   byId('year').value = year ?? '';
@@ -400,6 +405,7 @@ byId('back').addEventListener('click', () => {
   streetView(false);
   current = null;
   currentYear = null;
+  window.AimesJourney?.forget();
   resetReconstruction();
   marker.remove();
   roadMarker?.remove();
@@ -635,7 +641,8 @@ function renderExplorerNearby() {
 }
 function buildExplorerMap() {
   if (explorerMap) { explorerMap.invalidateSize({ pan:false }); return; }
-  explorerMap = L.map('explore-map', { crs:L.CRS.EPSG4326, zoomControl:false, zoomAnimation:false, minZoom:-2, maxZoom:17, maxBounds:worldBounds });
+  // The local vector overview and OSM tiles must share Web Mercator.
+  explorerMap = L.map('explore-map', { zoomControl:false, zoomAnimation:false, minZoom:-2, maxZoom:17, maxBounds:worldBounds });
   explorerMap.setView([current.lat, current.lon], 5, { animate:false });
   explorerMap.attributionControl.setPrefix(false).addAttribution('<a href="https://www.naturalearthdata.com/about/terms-of-use/">Natural Earth · '+tr('nykykartta')+'</a>');
   explorerPhotoMarkers = L.layerGroup().addTo(explorerMap);
@@ -809,3 +816,15 @@ byId('explore-close').addEventListener('click', closeExplorer);
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && explorerVisible()) { event.preventDefault(); closeExplorer(); }
 });
+
+// An explicit research-trail link restores the selected point without geocoding.
+let aimesTrailRestored=false;
+function restoreAimesTrail(){
+  if(aimesTrailRestored)return;
+  const state=window.AimesJourney?.state;if(!state)return;
+  aimesTrailRestored=true;
+  byId('query').value=state.name;
+  travel({...state,label:state.name,kind:'place'}, /^\d{4}$/.test(state.period)?Number(state.period):null);
+}
+document.addEventListener('DOMContentLoaded',restoreAimesTrail,{once:true});
+window.addEventListener('aimes-shell-ready',restoreAimesTrail,{once:true});
