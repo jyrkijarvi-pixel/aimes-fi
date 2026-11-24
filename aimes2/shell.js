@@ -32,7 +32,7 @@ for(const code of ['fi','en']){const a=link(code.toUpperCase(),location.href);a.
 shell.append(brand,nav,languages,toggle);original?original.before(shell):document.body.prepend(shell);
 function closeMenu(){shell.classList.remove('aimes-menu-open');toggle.setAttribute('aria-expanded','false');toggle.textContent=copy.menu;more.open=false;}
 toggle.addEventListener('click',()=>{const open=toggle.getAttribute('aria-expanded')!=='true';shell.classList.toggle('aimes-menu-open',open);toggle.setAttribute('aria-expanded',String(open));toggle.textContent=open?copy.close:copy.menu;});
-shell.addEventListener('keydown',event=>{if(event.key==='Escape'){closeMenu();toggle.focus();}});
+shell.addEventListener('keydown',event=>{if(event.key==='Escape'){closeMenu();(toggle.getClientRects().length?toggle:summary).focus();}});
 document.addEventListener('click',event=>{if(!shell.contains(event.target))more.open=false;});
 for(const a of nav.querySelectorAll('a'))a.addEventListener('click',closeMenu);
 
@@ -78,7 +78,7 @@ if(inMap&&document.getElementById('search-panel')){
     credit.replaceChildren(document.createTextNode(item.credit+' · '));const source=link(copy.source,item.source),rights=link(item.rights,item.license);source.target=rights.target='_blank';source.rel=rights.rel='noopener noreferrer';credit.append(source,document.createTextNode(' · '+copy.rights+': '),rights,document.createTextNode(en?' · resized preview':' · pienennetty esikatselu'));
     section.dataset.day=finnishDay();
   }
-  if(preview){const label=node('label',copy.preview,'aimes-daily-preview');const select=node('select');select.id='daily-preview';select.append(new Option(copy.automatic,''),...discoveries.map(d=>new Option(d[lang].type+' · '+d[lang].title,d.id)));select.value=selected;select.addEventListener('change',()=>{selected=select.value;show();});label.append(select);section.append(label);}
+  if(preview){const label=node('label',copy.preview,'aimes-daily-preview');label.htmlFor='daily-preview';const select=node('select');select.id='daily-preview';select.append(new Option(copy.automatic,''),...discoveries.map(d=>new Option(d[lang].type+' · '+d[lang].title,d.id)));select.value=selected;select.addEventListener('change',()=>{selected=select.value;const url=new URL(location.href);if(selected)url.searchParams.set('find',selected);else url.searchParams.delete('find');history.replaceState(history.state,'',url);for(const a of languages.querySelectorAll('a')){const target=new URL(a.href);if(selected)target.searchParams.set('find',selected);else target.searchParams.delete('find');a.href=target;}show();});section.append(label,select);select.className='aimes-daily-selector';}
   document.getElementById('search-panel').append(section);show();
   setInterval(()=>{if(section.dataset.day!==finnishDay())show();},60000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&section.dataset.day!==finnishDay())show();});
